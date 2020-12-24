@@ -1,10 +1,19 @@
+@run
 export class Tree {
     // todo : should be more specific
-    json: any
-    constructor(json: any) {
-        this.json = json
+    ast: any
+    constructor(ast: any) {
+        this.ast = ast
     }
     toCode():string{
-        return this.json.value
+        return this.ast.value
     }
+
+    evaluate(){
+        
+    }
+}
+
+function run(target){
+
 }

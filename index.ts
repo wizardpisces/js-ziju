@@ -2,7 +2,10 @@
 //     parse,
 //     tokenizer
 // } from 'acorn'
-import { CodeGen } from './src/CodeGen'
+import { 
+    CodeGen,
+    Interpreter 
+} from './src'
 // type integer = 1 | 2;
 
 // let a: integer = 1;
@@ -13,3 +16,4 @@ import { CodeGen } from './src/CodeGen'
 // console.log(...tokenizer("1 + 1", { ecmaVersion: 2020 }));
 
 console.log(new CodeGen('console.log(1);').toCode());
+console.log(new Interpreter('console.log(1);').interpret());

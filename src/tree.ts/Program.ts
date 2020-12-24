@@ -1,96 +1,152 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
-
-export class Identifier extends Tree {
-    constructor(json: ESTree.Identifier) {
-        super(json)
+import { NodeTypes } from './ast'
+const nullFn = () => { }
+const context = {
+    console
+}
+export class Literal extends Tree {
+    ast!: ESTree.Literal
+    constructor(ast: ESTree.Literal) {
+        super(ast)
     }
     toCode(): string {
-        return this.json.name
+        if (this.ast.value) {
+            return this.ast.value.toString();
+        }
+        return ''
+    }
+
+    evaluate() {
+        return this.ast.value
+    }
+}
+
+export class Identifier extends Tree {
+    constructor(ast: ESTree.Identifier) {
+        super(ast)
+    }
+
+    toCode(): string {
+        return this.ast.name
+    }
+
+    evaluate() {
+
     }
 }
 
 export class MemberExpression extends Tree {
-    json!: ESTree.MemberExpression
-    constructor(json: ESTree.MemberExpression) {
-        super(json)
+    ast!: ESTree.MemberExpression
+    constructor(ast: ESTree.MemberExpression) {
+        super(ast)
     }
     toCode(): string {
         let code: string = ''
-        switch (this.json.object.type) {
-            case 'Identifier': code += new Identifier(this.json.object).toCode()
+        switch (this.ast.object.type) {
+            case NodeTypes.Identifier: code += new Identifier(this.ast.object).toCode()
         }
-        if (this.json.property) {
+        if (this.ast.property) {
             code += '.';
-            switch (this.json.property.type) {
-                case 'Identifier': code += new Identifier(this.json.property).toCode()
+            switch (this.ast.property.type) {
+                case NodeTypes.Identifier: code += new Identifier(this.ast.property).toCode()
             }
         }
 
         return code;
     }
-}
-
-
-export class Literal extends Tree {
-    json!: ESTree.Literal
-    constructor(json: ESTree.Literal) {
-        super(json)
-    }
-    toCode():string {
-        if(this.json.value){
-            return this.json.value.toString();
+    evaluate(): Function {
+        if (this.ast.object.type === NodeTypes.Identifier) {
+            if (this.ast.property.type === NodeTypes.Identifier) {
+                return context[this.ast.object.name][this.ast.property.name]
+            }
         }
-        return ''
+        return nullFn
     }
 }
 
 export class CallExpression extends Tree {
-    json!: ESTree.CallExpression
-    constructor(json: ESTree.CallExpression) {
-        super(json)
+    ast!: ESTree.CallExpression
+    constructor(ast: ESTree.CallExpression) {
+        super(ast)
     }
     toCode() {
         let code = ''
-        switch (this.json.callee.type) {
-            case 'MemberExpression': code += new MemberExpression(this.json.callee).toCode()
+        switch (this.ast.callee.type) {
+            case NodeTypes.MemberExpression: code += new MemberExpression(this.ast.callee).toCode()
         }
         code += '('
-        this.json.arguments.forEach((arg) => {
+        this.ast.arguments.forEach((arg) => {
             switch (arg.type) {
-                case 'Literal': code += new Literal(arg).toCode()
+                case NodeTypes.Literal: code += new Literal(arg).toCode()
             }
         });
         code += ')'
         return code;
     }
+
+    transformArgs() {
+        return this.ast.arguments.map((arg) => {
+            if (arg.type === NodeTypes.Literal) {
+                return new Literal(arg).evaluate()
+            }
+        })
+    }
+
+    evaluate() {
+        let fn: Function = nullFn;
+
+        if (this.ast.callee.type === NodeTypes.MemberExpression) {
+            fn = new MemberExpression(this.ast.callee).evaluate()
+        }
+
+        fn.apply(null, this.transformArgs())
+
+        console.log(2)
+    }
 }
 
 export class ExpressionStatement extends Tree {
-    constructor(json: ESTree.ExpressionStatement) {
-        super(json)
+    constructor(ast: ESTree.ExpressionStatement) {
+        super(ast)
     }
     toCode(): string {
         let code = ''
-        switch (this.json.expression.type) {
-            case 'CallExpression': code += new CallExpression(this.json.expression).toCode()
+        switch (this.ast.expression.type) {
+            case 'CallExpression': code += new CallExpression(this.ast.expression).toCode()
         }
         return code;
+    }
+    evaluate() {
+        switch (this.ast.expression.type) {
+            case 'CallExpression': new CallExpression(this.ast.expression).evaluate()
+        }
     }
 }
 
 export class Program extends Tree {
-    constructor(json: ESTree.Program) {
-        super(json)
+    constructor(ast: ESTree.Program) {
+        super(ast)
     }
+
     toCode(): string {
         let code = ''
-        for (const node of this.json.body) {
+        for (const node of this.ast.body) {
             switch (node.type) {
-                case 'ExpressionStatement': code += new ExpressionStatement(node).toCode()
-                default: console.error('[Program]: unknowb node type: '+node.type)
+                case 'ExpressionStatement': code += new ExpressionStatement(node).toCode(); break;
+                default: console.error('[Program]: unknown node type: ' + node.type)
             }
         }
         return code;
     }
+
+    evaluate() {
+        for (const node of this.ast.body) {
+            switch (node.type) {
+                case 'ExpressionStatement': new ExpressionStatement(node).evaluate(); break;
+                default: console.error('[Program]: unknown node type: ' + node.type)
+            }
+        }
+    }
 }
+
