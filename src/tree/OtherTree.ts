@@ -1,10 +1,13 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
-const nullFn = () => { }
+import { Context } from './context'
+
+const nullFn = () => { console.log('Null function called!!!') }
 const context = {
     console
 }
+
 export class Literal extends Tree {
     ast!: ESTree.Literal
     constructor(ast: ESTree.Literal) {
@@ -93,16 +96,18 @@ export class CallExpression extends Tree {
         })
     }
 
-    evaluate() {
-        let fn: Function = nullFn;
+    evaluate(context: Context) {
+        let fn: Function = nullFn,
+            { callee } = this.ast
 
-        if (this.ast.callee.type === NodeTypes.MemberExpression) {
-            fn = new MemberExpression(this.ast.callee).evaluate()
+        switch (callee.type) {
+            case NodeTypes.MemberExpression: fn = new MemberExpression(callee).evaluate();
+                break;
+            case NodeTypes.Identifier: fn = context.env.get(callee.name);
+                break;
         }
 
         fn.apply(null, this.transformArgs())
-
-        console.log(2)
     }
 }
 
@@ -113,39 +118,15 @@ export class ExpressionStatement extends Tree {
     toCode(): string {
         let code = ''
         switch (this.ast.expression.type) {
-            case 'CallExpression': code += new CallExpression(this.ast.expression).toCode()
+            case 'CallExpression': code += new CallExpression(this.ast.expression).toCode();
+            break;
         }
         return code;
     }
-    evaluate() {
+    evaluate(context: Context) {
         switch (this.ast.expression.type) {
-            case 'CallExpression': new CallExpression(this.ast.expression).evaluate()
-        }
-    }
-}
-
-export class Program extends Tree {
-    constructor(ast: ESTree.Program) {
-        super(ast)
-    }
-
-    toCode(): string {
-        let code = ''
-        for (const node of this.ast.body) {
-            switch (node.type) {
-                case 'ExpressionStatement': code += new ExpressionStatement(node).toCode(); break;
-                default: console.error('[Program]: unknown node type: ' + node.type)
-            }
-        }
-        return code;
-    }
-
-    evaluate() {
-        for (const node of this.ast.body) {
-            switch (node.type) {
-                case 'ExpressionStatement': new ExpressionStatement(node).evaluate(); break;
-                default: console.error('[Program]: unknown node type: ' + node.type)
-            }
+            case 'CallExpression': new CallExpression(this.ast.expression).evaluate(context)
+                break;
         }
     }
 }

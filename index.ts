@@ -3,7 +3,7 @@
 //     tokenizer
 // } from 'acorn'
 import { 
-    CodeGen,
+    // CodeGen,
     Interpreter 
 } from './src'
 // type integer = 1 | 2;
@@ -15,5 +15,13 @@ import {
 // console.log(parse("1 + 1", { ecmaVersion: 2020 }));
 // console.log(...tokenizer("1 + 1", { ecmaVersion: 2020 }));
 
-console.log(new CodeGen('console.log(1);').toCode());
-console.log(new Interpreter('console.log(1);').interpret());
+let interpretJsCode = `
+console.log('=== MemberExpression evaluated =========');
+function fn(){
+    console.log('=== FunctionDeclaration evaluated =====')
+}
+fn()
+`
+
+// console.log(new CodeGen('console.log(1);').toCode());
+console.log(new Interpreter(interpretJsCode).interpret());

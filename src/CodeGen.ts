@@ -1,6 +1,6 @@
 import ESTree from 'estree'
 import {parse} from 'acorn'
-import { Program } from './tree.ts/Program'
+import { Program } from './tree/Program'
 
 export class CodeGen {
     ast: any
