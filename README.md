@@ -4,14 +4,41 @@ generate js source code by js's ast tree
 
 interpret js by js'ast tree
 
-### Support expression examples:
+### How to Use
 
-console.log(1)
+```ts
+import { 
+    CodeGen,
+    Interpreter 
+} from './src'
 
-### How to run
+
+let interpretJsCode = `
+console.log('=== MemberExpression evaluated =========');
+function fn(){
+    console.log('=== FunctionDeclaration evaluated =====')
+}
+fn()
+`
+
+
+console.log(new CodeGen('console.log(1);').toCode());
+/* output: 
+* console.log(1)
+*/
+
+new Interpreter(interpretJsCode).interpret()
+/* output:
+* === MemberExpression evaluated =========
+* === FunctionDeclaration evaluated =====
+*/
+```
+
+### How to run (support node>=12)
 
 ```
-npm run dev
+npm install
+npm run test
 ```
 
 ## Refenrece
