@@ -26,6 +26,28 @@
             },
             "console": "integratedTerminal",
             "sourceMaps": true
+        },
+        {
+            "name": "js-ziju-example",
+            "type": "node",
+            "request": "launch",
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
+            "args": [
+                "${workspaceFolder}/example/index.ts"
+            ],
+            "preLaunchTask": null,
+            "runtimeExecutable": null,
+            "env": {
+                "NODE_ENV": "development",
+                "TS_NODE_FILES": "true"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true
         }
     ]
 }

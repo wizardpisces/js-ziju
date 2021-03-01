@@ -1,4 +1,4 @@
-import { Context } from './context'
+import { Context } from '../environment/context'
 
 export class LoggerUtil {
     constructor() {}
@@ -17,7 +17,7 @@ export class Tree {
         // console.log(this.constructor.name)
     }
     toCode(): string {
-        return this.ast.value
+        return ''
     }
 
     evaluate(context?:Context) {

@@ -1,10 +1,13 @@
 import { NodeTypes } from '../tree/ast';
 
-export type Kind = NodeTypes.FunctionDeclaration
+export enum Kind {
+    FunctionDeclaration = NodeTypes['FunctionDeclaration'],
+    VariableDeclarator = NodeTypes['VariableDeclarator']
+}
 
 export class Variable {
     private _value: any
-    kind: Kind = NodeTypes.FunctionDeclaration // set default as VARIABLE
+    kind: Kind = Kind.VariableDeclarator // set default as VariableDeclarator
     constructor(kind: Kind, val: any) {
         this.kind = kind;
         this._value = val;
@@ -42,7 +45,7 @@ export class Environment{
         }
     }
 
-    public get(name: string, kind: Kind = NodeTypes.FunctionDeclaration) {
+    public get(name: string, kind: Kind = Kind.VariableDeclarator) {
         let result = this.lookup(name, kind);
 
         if (result) {
@@ -52,7 +55,7 @@ export class Environment{
         return null;
     }
 
-    public def(name: string, value: any = '', kind: Kind = NodeTypes.FunctionDeclaration) {
+    public def(name: string, value: any = '', kind: Kind = Kind.VariableDeclarator) {
         if (!this.vars[kind]) {
             this.vars[kind] = {}
         }

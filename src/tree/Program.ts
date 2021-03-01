@@ -2,8 +2,8 @@ import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
 import { FunctionDeclaration } from './FunctionDeclaration'
-import { Context } from './context'
-import { ExpressionStatement } from './OtherTree'
+import { Context } from '../environment/context'
+import { ExpressionStatement } from './expression'
 
 export class Program extends Tree {
     constructor(ast: ESTree.Program) {

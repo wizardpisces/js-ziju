@@ -4,7 +4,8 @@
   "description": "simple scss compiler",
   "main": "index.ts",
   "scripts": {
-    "test": "node -v && node -r ts-node/register index.ts"
+    "test": "node -v && node -r ts-node/register index.ts",
+    "example": "node -v && node -r ts-node/register example/index.ts"
   },
   "engines": {
     "node": ">=10.x"

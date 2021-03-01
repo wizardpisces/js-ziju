@@ -1,9 +1,9 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
-import { Context } from './context'
+import { Context } from '../environment/context'
 import { NodeTypes } from './ast'
-import { ExpressionStatement } from './OtherTree'
-import { Environment } from '@/environment/Environment'
+import { Environment, Kind } from '../environment/Environment'
+import { BlockStatement } from './statement'
 
 export class FunctionDeclaration extends Tree {
     ast!: ESTree.FunctionDeclaration
@@ -21,13 +21,9 @@ export class FunctionDeclaration extends Tree {
             context.env.def(id.name, function () {
                 let env: Environment = context.env.extend()
                 if (body.type === NodeTypes.BlockStatement) {
-                    body.body.forEach((node) => {
-                        if (node.type === NodeTypes.ExpressionStatement) {
-                            new ExpressionStatement(node).evaluate({ ...context, env })
-                        }
-                    })
+                    new BlockStatement(body).evaluate({...context, env})
                 }
-            })
+            }, Kind.FunctionDeclaration)
         }
     }
 }
