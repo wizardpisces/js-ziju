@@ -15,15 +15,24 @@ export class FunctionDeclaration extends Tree {
     }
 
     evaluate(context: Context) {
-        let { body, id } = this.ast
+        let { body, id, params } = this.ast
 
         if (id) {
-            context.env.def(id.name, function () {
+            let makeFunction = function () {
                 let env: Environment = context.env.extend()
+
+                params.forEach((param, i) => {
+                    if (param.type === NodeTypes.Identifier && arguments[i]) {
+                        env.def(param.name, arguments[i])
+                    }
+                })
+                
                 if (body.type === NodeTypes.BlockStatement) {
-                    new BlockStatement(body).evaluate({...context, env})
+                    new BlockStatement(body).evaluate({ ...context, env })
                 }
-            }, Kind.FunctionDeclaration)
+            }
+
+            context.env.def(id.name, makeFunction, Kind.FunctionDeclaration)
         }
     }
 }

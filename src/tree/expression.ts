@@ -47,18 +47,28 @@ export class BinaryExpression extends Tree {
         super(ast)
     }
 
-    evaluate(context: Context) {
+    evaluate(context: Context):boolean | number {
 
         const opAcMap = {
-            '==': (left: ESTree.Literal, right: ESTree.Literal) => left == right,
-            '===': (left: ESTree.Literal, right: ESTree.Literal) => left === right,
-            '!=': (left: ESTree.Literal, right: ESTree.Literal) => left != right,
-            '>=': (left: ESTree.Literal, right: ESTree.Literal) => left >= right,
-            '<=': (left: ESTree.Literal, right: ESTree.Literal) => left <= right,
+            // '=': (left, right) => left = right,
+            '||': (left, right) => left || right,
+            '&&': (left, right) => left && right,
 
-            '>': (left: ESTree.Literal, right: ESTree.Literal) => left > right,
-            '<': (left: ESTree.Literal, right: ESTree.Literal) => left < right,
-        }
+            '==': (left, right) => left == right,
+            '!=': (left, right) => left != right,
+            '>=': (left, right) => left >= right,
+            '<=': (left, right) => left <= right,
+
+            '>': (left, right) => left > right,
+            '<': (left, right) => left < right,
+
+            '+': (left, right) => left + right,
+            '-': (left, right) => left - right,
+            '/': (left, right) => left / right,
+            '*': (left, right) => left * right,
+            '%': (left, right) => left % right,
+
+        };
         
         return opAcMap[this.ast.operator](dispatchExpression(this.ast.left, context), dispatchExpression(this.ast.right, context))
 
@@ -89,7 +99,7 @@ export class UpdateExpression extends Tree {
     }
 
     toCode(): string {
-        return 'assignment expression code!'
+        return 'UpdateExpression code!'
     }
 
     evaluate(context: Context) {
@@ -150,11 +160,9 @@ export class CallExpression extends Tree {
         return code;
     }
 
-    transformArgs() {
+    transformArgs(context) {
         return this.ast.arguments.map((arg) => {
-            if (arg.type === NodeTypes.Literal) {
-                return new Literal(arg).evaluate()
-            }
+           return dispatchExpression(arg as ESTree.Expression,context)
         })
     }
 
@@ -169,7 +177,7 @@ export class CallExpression extends Tree {
                 break;
         }
 
-        fn.apply(null, this.transformArgs())
+        fn.apply(null, this.transformArgs(context))
     }
 }
 
@@ -204,5 +212,4 @@ export function dispatchExpression(expression: ESTree.Expression, context: Conte
     } else if (expression.type === NodeTypes.BinaryExpression) {
         return new BinaryExpression(expression).evaluate(context)
     }
-
 }

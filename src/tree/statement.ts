@@ -17,14 +17,13 @@ export class BlockStatement extends Tree {
     }
 
     evaluate(context: Context) {
-        let env = context.env
         this.ast.body.forEach((node) => {
             if (node.type === NodeTypes.ExpressionStatement) {
-                new ExpressionStatement(node).evaluate({ ...context, env })
+                new ExpressionStatement(node).evaluate(context)
             } else if (node.type === NodeTypes.VariableDeclaration) {
-                new VariableDeclaration(node).evaluate({ ...context, env })
+                new VariableDeclaration(node).evaluate(context)
             } else if (node.type === NodeTypes.WhileStatement) {
-                new WhileStatement(node).evaluate({ ...context, env })
+                new WhileStatement(node).evaluate(context)
             }
         })
     }
@@ -38,7 +37,9 @@ export class WhileStatement extends Tree {
 
     evaluate(context: Context) {
         if (this.ast.test.type === NodeTypes.BinaryExpression) {
-            while (new BinaryExpression(this.ast.test).evaluate(context)){
+            let binaryExpression = new BinaryExpression(this.ast.test);
+            
+            while (binaryExpression.evaluate(context)){
                 if(this.ast.body.type === NodeTypes.BlockStatement){
                     new BlockStatement(this.ast.body).evaluate(context)
                 }
