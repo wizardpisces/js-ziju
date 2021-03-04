@@ -5,7 +5,7 @@ export function fibonacci(n) {
         temp = f1,
         i = 0;
 
-    while (i <= n) {
+    while (i < n) {
         console.log(f1)
         temp = f1;
         f1 = f1 + f0;

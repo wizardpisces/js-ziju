@@ -1,9 +1,13 @@
+## Project Target
+
+用工具可以制造工具，被制造出来的工具将来又可以制造新的工具。
+编译器可以编译出新的编译器。
 ## Js self compiling
 
 包含两套流程：
 
 1. js source code -> compile to ast -> run ast
-2. js source code -> compile to ast -> compile to assembly code -> run assembly code on virtual machine (compile assembly code to machine code -> run machine code)
+2. js source code -> compile to ast -> compile ast to assembly code -> compile assembly code to machine code -> run machine code
 
 ### How to Use
 
@@ -33,6 +37,31 @@ new Interpreter(interpretJsCode).interpret()
 * === MemberExpression evaluated =========
 * === FunctionDeclaration evaluated =====
 */
+
+//example: fibonacci
+
+interpretJsCode = `
+function fibonacci(n) {
+    let f0 = 0,
+        f1 = 1,
+        temp = f1,
+        i = 0;
+
+    while (i < n) {
+        console.log(f1)
+        temp = f1;
+        f1 = f1 + f0;
+        f0 = temp;
+        i++;
+    }
+
+}
+fibonacci(5)
+`
+new Interpreter(interpretJsCode).interpret()
+/* output:
+* 1 1 2 3 5
+*/
 ```
 
 ### How to run (support node>=12)
@@ -41,6 +70,8 @@ new Interpreter(interpretJsCode).interpret()
 npm install
 npm run test
 ```
+
+
 ```
 npm run example
 ```
