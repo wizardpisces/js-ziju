@@ -5,7 +5,9 @@
   "main": "index.ts",
   "scripts": {
     "test": "node -v && node -r ts-node/register index.ts",
-    "example": "node -v && node -r ts-node/register example/index.ts"
+    "example": "node -v && node -r ts-node/register example/index.ts",
+    "asm": "node --print-bytecode example/asm.js",
+    "jest": "ts-jest"
   },
   "engines": {
     "node": ">=10.x"

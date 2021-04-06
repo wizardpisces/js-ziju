@@ -7,10 +7,9 @@ export type Context = {
 }
 
 export function createContext(): Context {
-    let assembly = ''
     const context: Context = {
         env: new Environment(null),
-        assembly,
+        assembly:'',
         push(code: string) {
             context.assembly += code;
         }
