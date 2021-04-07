@@ -19,4 +19,5 @@ export const enum NodeTypes {
 
     // flow control
     WhileStatement = 'WhileStatement',
+    IfStatement = 'IfStatement',
 }

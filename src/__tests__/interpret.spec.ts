@@ -13,12 +13,10 @@ describe('interpret', () => {
     //     new Interpreter(readSource('tests/print.js')).interpret()
     // });
     test('function call', () => {
-        let result = new Interpreter(readSource('tests/functionCall.js')).interpret()
-
-        console.log('result', result)
+        new Interpreter(readSource('tests/functionCall.js')).interpret()
     });
 
-    // it('fib', () => {
-    //     new Interpreter(readSource('tests/fib.js')).interpret()
-    // });
+    it('fib', () => {
+        new Interpreter(readSource('tests/fib.js')).interpret()
+    });
 });
