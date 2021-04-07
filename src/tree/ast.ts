@@ -4,6 +4,7 @@ export const enum NodeTypes {
     AssignmentExpression = 'AssignmentExpression',
     ExpressionStatement = 'ExpressionStatement',
     BinaryExpression = 'BinaryExpression',
+    CallExpression = 'CallExpression',
     Identifier = 'Identifier',
     Literal = 'Literal',
     
@@ -13,6 +14,8 @@ export const enum NodeTypes {
     FunctionDeclaration = 'FunctionDeclaration',
 
     BlockStatement = 'BlockStatement',
+
+    ReturnStatement = 'ReturnStatement',
 
     // flow control
     WhileStatement = 'WhileStatement',

@@ -20,7 +20,23 @@ export class Variable {
     }
 }
 
-export class Environment{
+let returnValue: any = undefined
+class BaseEnvironment {
+    public setReturnValue(value: any = undefined) {
+        returnValue = value
+    }
+
+    public getReturnValue() {
+        /**
+         * return value can only be accessed once
+         */
+        let ret = returnValue
+        returnValue = undefined
+        return ret;
+    }
+}
+
+export class Environment extends BaseEnvironment{
     vars: {
         [kind: string]: {
             [name: string]: Variable
@@ -28,6 +44,7 @@ export class Environment{
     }
     parent!: Environment | null
     constructor(parent: Environment | null) {
+        super()
         this.vars = Object.create(parent ? parent.vars : null);
         this.parent = parent;
     }

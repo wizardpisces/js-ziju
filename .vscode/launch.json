@@ -6,6 +6,21 @@
     "configurations": [
     
         {
+            "name": "js-ziju-jest",
+            "type": "node",
+            "request": "launch",
+            // "program": "${workspaceFolder}/scripts/jest.js",
+            "runtimeArgs": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/.bin/jest",
+                "--runInBand",
+                "--coverage",
+                "false"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
             "name": "js-ziju",
             "type": "node",
             "request": "launch",

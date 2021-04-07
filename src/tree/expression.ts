@@ -5,7 +5,7 @@ import { Context } from '../environment/context'
 import { Kind } from '../environment/Environment'
 
 const nullFn = () => { console.log('Null function called!!!') }
-const context = {
+const internal = {
     console
 }
 
@@ -133,7 +133,7 @@ export class MemberExpression extends Tree {
     evaluate(): Function {
         if (this.ast.object.type === NodeTypes.Identifier) {
             if (this.ast.property.type === NodeTypes.Identifier) {
-                return context[this.ast.object.name][this.ast.property.name]
+                return internal[this.ast.object.name][this.ast.property.name]
             }
         }
         return nullFn
@@ -160,7 +160,7 @@ export class CallExpression extends Tree {
         return code;
     }
 
-    transformArgs(context) {
+    transformArgs(context:Context) {
         return this.ast.arguments.map((arg) => {
            return dispatchExpression(arg as ESTree.Expression,context)
         })
@@ -178,6 +178,8 @@ export class CallExpression extends Tree {
         }
 
         fn.apply(null, this.transformArgs(context))
+        let ret = context.env.getReturnValue()
+        return ret
     }
 }
 
@@ -211,5 +213,9 @@ export function dispatchExpression(expression: ESTree.Expression, context: Conte
         return expression.value
     } else if (expression.type === NodeTypes.BinaryExpression) {
         return new BinaryExpression(expression).evaluate(context)
+    }else if (expression.type === NodeTypes.CallExpression) {
+        return new CallExpression(expression).evaluate(context)
+    }else{
+        throw Error('Unknown expression ' + expression)
     }
 }
