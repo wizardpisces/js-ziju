@@ -67,17 +67,13 @@ new Interpreter(interpretJsCode).interpret()
 */
 ```
 
-### How to run (support node>=12)
+### How to test (support node>=12)
 ```
 npm install
 ```
 
 ```
-npm run test
-```
-
-```
-npm run example
+npm run jest
 ```
 ## Refenrece
 
