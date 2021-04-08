@@ -1,10 +1,11 @@
 import { Context } from '@/environment/context'
 import ESTree from 'estree'
 import { NodeTypes } from './ast';
-import { BinaryExpression, dispatchExpression } from './expression';
+import { BinaryExpression, dispatchExpressionEvaluation } from './expression';
 import { Tree } from './Tree'
 import { ExpressionStatement } from './expression'
 import { VariableDeclaration } from './VariableDeclaration'
+import { FunctionDeclaration } from './FunctionDeclaration';
 
 
 export class BlockStatement extends Tree {
@@ -17,7 +18,7 @@ export class BlockStatement extends Tree {
     }
 
     evaluate(context: Context): boolean {
-        return this.ast.body.every((statement: ESTree.Statement) => dispatchStatement(statement, context))
+        return this.ast.body.every((statement: ESTree.Statement) => dispatchStatementEvaluation(statement, context))
     }
 }
 export class ReturnStatement extends Tree {
@@ -28,7 +29,7 @@ export class ReturnStatement extends Tree {
 
     evaluate(context: Context): false {
         if (this.ast.argument) {
-            let result = dispatchExpression(this.ast.argument, context)
+            let result = dispatchExpressionEvaluation(this.ast.argument, context)
             context.env.setReturnValue(result)
         }
 
@@ -86,22 +87,31 @@ export class IfStatement extends Tree {
  * to skip latter evaluation when encounter return interruption
  */
 
-function dispatchStatement(statement: ESTree.Statement, context: Context): boolean {
-    if (statement.type === NodeTypes.ExpressionStatement) {
-        new ExpressionStatement(statement).evaluate(context)
-    } else if (statement.type === NodeTypes.VariableDeclaration) {
-        new VariableDeclaration(statement).evaluate(context)
-    } else if (statement.type === NodeTypes.WhileStatement) {
-        return new WhileStatement(statement).evaluate(context)
-    } else if (statement.type === NodeTypes.IfStatement) {
-        return new IfStatement(statement).evaluate(context)
-    } else if (statement.type === NodeTypes.ReturnStatement) {
-        /**
-         * interrupt when encounter returnStatement
-         */
-        return new ReturnStatement(statement).evaluate(context)
-    } else {
-        throw Error('Unknown statement ' + statement)
+export function dispatchStatementEvaluation(statement: ESTree.Statement, context: Context): boolean {
+
+    switch (statement.type) {
+        case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).evaluate(context); break;
+        case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).evaluate(context); break;
+        case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
+        case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
+        case NodeTypes.IfStatement: return new IfStatement(statement).evaluate(context)
+        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).evaluate(context)
+        default: throw Error('Unknown statement ' + statement)
+    }
+    
+    return true;
+}
+
+export function dispatchStatementCompile(statement: ESTree.Statement, context: Context): boolean {
+
+    switch (statement.type) {
+        case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).evaluate(context); break;
+        case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).evaluate(context); break;
+        case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
+        case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
+        case NodeTypes.IfStatement: return new IfStatement(statement).evaluate(context)
+        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).evaluate(context)
+        default: throw Error('Unknown statement ' + statement)
     }
 
     return true;

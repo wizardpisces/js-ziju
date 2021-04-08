@@ -47,7 +47,7 @@ export class BinaryExpression extends Tree {
         super(ast)
     }
 
-    evaluate(context: Context):boolean | number {
+    evaluate(context: Context): boolean | number {
 
         const opAcMap = {
             // '=': (left, right) => left = right,
@@ -69,8 +69,8 @@ export class BinaryExpression extends Tree {
             '%': (left, right) => left % right,
 
         };
-        
-        return opAcMap[this.ast.operator](dispatchExpression(this.ast.left, context), dispatchExpression(this.ast.right, context))
+
+        return opAcMap[this.ast.operator](dispatchExpressionEvaluation(this.ast.left, context), dispatchExpressionEvaluation(this.ast.right, context))
 
     }
 }
@@ -87,7 +87,7 @@ export class AssignmentExpression extends Tree {
 
     evaluate(context: Context) {
         if (this.ast.operator === '=') {
-            context.env.def((<ESTree.Identifier>this.ast.left).name, dispatchExpression(this.ast.right, context))
+            context.env.def((<ESTree.Identifier>this.ast.left).name, dispatchExpressionEvaluation(this.ast.right, context))
         }
     }
 }
@@ -160,9 +160,9 @@ export class CallExpression extends Tree {
         return code;
     }
 
-    transformArgs(context:Context) {
+    transformArgs(context: Context) {
         return this.ast.arguments.map((arg) => {
-           return dispatchExpression(arg as ESTree.Expression,context)
+            return dispatchExpressionEvaluation(arg as ESTree.Expression, context)
         })
     }
 
@@ -197,25 +197,18 @@ export class ExpressionStatement extends Tree {
         return code;
     }
     evaluate(context: Context) {
-        switch (this.ast.expression.type) {
-            case 'CallExpression': new CallExpression(this.ast.expression).evaluate(context)
-            case 'AssignmentExpression': new AssignmentExpression(this.ast.expression).evaluate(context)
-            case 'UpdateExpression': new UpdateExpression(this.ast.expression).evaluate(context)
-                break;
-        }
+        return dispatchExpressionEvaluation(this.ast.expression, context)
     }
 }
 
-export function dispatchExpression(expression: ESTree.Expression, context: Context) {
-    if (expression.type === NodeTypes.Identifier) {
-        return context.env.get(expression.name)
-    } else if (expression.type === NodeTypes.Literal) {
-        return expression.value
-    } else if (expression.type === NodeTypes.BinaryExpression) {
-        return new BinaryExpression(expression).evaluate(context)
-    }else if (expression.type === NodeTypes.CallExpression) {
-        return new CallExpression(expression).evaluate(context)
-    }else{
-        throw Error('Unknown expression ' + expression)
+export function dispatchExpressionEvaluation(expression: ESTree.Expression, context: Context) {
+    switch (expression.type) {
+        case NodeTypes.Identifier: return context.env.get(expression.name)
+        case NodeTypes.Literal: return expression.value
+        case NodeTypes.BinaryExpression: return new BinaryExpression(expression).evaluate(context)
+        case NodeTypes.CallExpression: return new CallExpression(expression).evaluate(context)
+        case NodeTypes.AssignmentExpression: return new AssignmentExpression(expression).evaluate(context)
+        case NodeTypes.UpdateExpression: return new UpdateExpression(expression).evaluate(context)
+        default: throw Error('Unknown expression ' + expression)
     }
 }

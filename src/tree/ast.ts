@@ -5,6 +5,7 @@ export const enum NodeTypes {
     ExpressionStatement = 'ExpressionStatement',
     BinaryExpression = 'BinaryExpression',
     CallExpression = 'CallExpression',
+    UpdateExpression = 'UpdateExpression',
     Identifier = 'Identifier',
     Literal = 'Literal',
     

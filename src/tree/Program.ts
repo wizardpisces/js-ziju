@@ -1,11 +1,12 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
-import { FunctionDeclaration } from './FunctionDeclaration'
 import { Context } from '../environment/context'
 import { ExpressionStatement } from './expression'
+import { dispatchStatementCompile, dispatchStatementEvaluation} from './statement'
 
 export class Program extends Tree {
+    ast!: ESTree.Program
     constructor(ast: ESTree.Program) {
         super(ast)
     }
@@ -23,16 +24,18 @@ export class Program extends Tree {
         return code;
     }
 
+    /**
+     * ignore ModuleDeclaration for now
+     */
     evaluate(context: Context) {
-        for (const node of this.ast.body) {
-            switch (node.type) {
-                case NodeTypes.ExpressionStatement: new ExpressionStatement(node).evaluate(context);
-                    break;
-                case NodeTypes.FunctionDeclaration: new FunctionDeclaration(node).evaluate(context);
-                    break;
-                default:
-                    this.log.onError('[Program]: unknown node type: ' + node.type)
-            }
-        }
+        this.ast.body.forEach(node=>{
+            dispatchStatementEvaluation(node as ESTree.Statement,context)
+        })
+    }
+
+    compile(context:Context){
+        this.ast.body.forEach(node => {
+            dispatchStatementCompile(node as ESTree.Statement, context)
+        })
     }
 }
