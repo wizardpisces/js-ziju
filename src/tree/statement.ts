@@ -124,19 +124,18 @@ export class FunctionDeclaration extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        let scope = context.env
         let { body, id, params } = this.ast
         let safe = 'defaultFunctionName'
         
         // Add this function to outer scope
         if(id){
-            safe = scope.assign(id.name);
+            safe = context.env.assign(id.name);
         }else{
             throw Error('Do not support function name null yet!!')
         }
 
         // Copy outer scope so parameter mappings aren't exposed in outer scope.
-        const childScope = scope.copy();
+        const childScope = context.env.copy();
 
         context.emit(0, `${safe}:`);
         context.emit(depth, `PUSH RBP`);
@@ -159,6 +158,7 @@ export class FunctionDeclaration extends Tree {
             }
         });
 
+        context.env = childScope
         // Pass childScope in for reference when body is compiled.
         new BlockStatement(body).compile(context,depth)
 

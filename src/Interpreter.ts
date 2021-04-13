@@ -14,8 +14,7 @@ export class Interpreter {
         new Program(this.ast as ESTree.Program).evaluate(context)
         
         return {
-            ast: this.ast,
-            assembly: context.assembly
+            ast: this.ast
         }
     }
     // accept(visitor: Visitor) {
