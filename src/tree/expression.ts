@@ -4,11 +4,114 @@ import { NodeTypes } from './ast'
 import { Context, X86Context } from '../environment/context'
 import { Kind } from '../environment/Environment'
 import { X86NamePointer } from '../environment/X86Environment'
+import { SYSCALL_MAP, SystemCall } from '../backend/x86Assemble'
 import { opAcMap } from './util'
+
 const nullFn = () => { console.log('Null function called!!!') }
+
 const internal = {
     console
 }
+
+/**
+ * TODOS: 多参数跟字符串的输出需要做处理，目前只支持不超过10的单参数log，eg: console.log(6)
+ */
+
+const X86SysCallMap = (function prepareSyscallWrappers() {
+    type SysFunction = (ast: ESTree.CallExpression, context: X86Context, depth?: number) => void
+    const sysCallMap = {
+        write: 'console.log',
+        exit: 'exit' // Todos: js 的 exit 编译成了啥
+    }
+    const registers = ['RDI', 'RSI', 'RDX', 'R10', 'R8', 'R9'];
+    const wrappers: Record<string, SysFunction> = {};
+
+    Object.keys(SYSCALL_MAP).forEach((key) => {
+        wrappers[sysCallMap[key]] = (ast: ESTree.CallExpression, context: X86Context, depth: number = 0) => {
+            let args = ast.arguments
+
+            if (args.length > registers.length) {
+                throw new Error(`Too many arguments to syscall/${key}`);
+            }
+
+            // Compile first
+            args.forEach((arg) => dispatchExpressionCompile(arg, context, depth));
+
+            // Then pop to avoid possible register contention
+            args.forEach((_, i) =>
+                context.emit(depth, `POP ${registers[args.length - i - 1]}`)
+            );
+
+            context.emit(depth, `MOV RAX, ${SYSCALL_MAP[key as keyof SystemCall]}`);
+            context.emit(depth, 'SYSCALL');
+            context.emit(depth, `PUSH RAX\n`);
+        };
+    });
+
+    return wrappers;
+})()
+
+const X86ArithmeticMap = (function prepareArithmeticWrappers() {
+    // General operatations
+    const prepareGeneral = (instruction: string) => (ast: ESTree.BinaryExpression, context: X86Context, depth: number = 0) => {
+        depth++;
+        context.emit(depth, `# ${instruction.toUpperCase()}`);
+
+        // Compile first argument
+        dispatchExpressionCompile(ast.left, context, depth);
+
+        // Compile second argument
+        dispatchExpressionCompile(ast.right, context, depth);
+        context.emit(depth, `POP RAX`);
+
+        // Compile operation
+        context.emit(depth, `${instruction.toUpperCase()} [RSP], RAX`);
+
+        context.emit(depth, `# End ${instruction.toUpperCase()}`);
+    };
+
+    // Operations that use RAX implicitly
+    const prepareRax = (instruction: string, outRegister = 'RAX') => (
+        ast: ESTree.BinaryExpression,
+        context: X86Context,
+        depth: number = 0,
+    ) => {
+        depth++;
+        context.emit(depth, `# ${instruction.toUpperCase()}`);
+
+        // Compile first argument
+        dispatchExpressionCompile(ast.left, context, depth);
+
+        // Compile second argument
+        dispatchExpressionCompile(ast.right, context, depth);
+
+        // Must POP _after_ both have been compiled
+        context.emit(depth, `POP RAX`);
+        context.emit(depth, `XCHG [RSP], RAX`);
+
+        // Reset RDX for DIV
+        if (instruction.toUpperCase() === 'DIV') {
+            context.emit(depth, `XOR RDX, RDX`);
+        }
+
+        // Compiler operation
+        context.emit(depth, `${instruction.toUpperCase()} QWORD PTR [RSP]`);
+
+        // Swap the top of the stack
+        context.emit(depth, `MOV [RSP], ${outRegister}`);
+    };
+
+    return {
+        '+': prepareGeneral('add'),
+        '-': prepareGeneral('sub'),
+        '&': prepareGeneral('and'),
+        '|': prepareGeneral('or'),
+        '=': prepareGeneral('mov'),
+        '*': prepareRax('mul'),
+        '/': prepareRax('div'),
+        '%': prepareRax('div', 'RDX'),
+    };
+})()
 
 export class Literal extends Tree {
     ast!: ESTree.Literal
@@ -55,7 +158,7 @@ export class Identifier extends Tree {
             const operation = offset < 0 ? '+' : '-';
             context.emit(
                 depth,
-                `PUSH [RBP ${operation} ${Math.abs(offset * 8)}] # ${name}`,
+                `PUSH [RBP ${operation} ${Math.abs(offset * 8)}] # ${name}`
             );
         } else {
             throw new Error(
@@ -77,70 +180,7 @@ export class BinaryExpression extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        type OpFunction = (ast: ESTree.BinaryExpression, context: X86Context, depth?: number) => void
-        const X86OpMap: Record<string, OpFunction> = (function prepareArithmeticWrappers() {
-            // General operatations
-            const prepareGeneral = (instruction: string) => (ast: ESTree.BinaryExpression, context: X86Context, depth: number = 0) => {
-                depth++;
-                context.emit(depth, `# ${instruction.toUpperCase()}`);
-
-                // Compile first argument
-                dispatchExpressionCompile(ast.left, context, depth);
-
-                // Compile second argument
-                dispatchExpressionCompile(ast.right, context, depth);
-                context.emit(depth, `POP RAX`);
-
-                // Compile operation
-                context.emit(depth, `${instruction.toUpperCase()} [RSP], RAX`);
-
-                context.emit(depth, `# End ${instruction.toUpperCase()}`);
-            };
-
-            // Operations that use RAX implicitly
-            const prepareRax = (instruction: string, outRegister = 'RAX') => (
-                ast: ESTree.BinaryExpression,
-                context: X86Context,
-                depth: number = 0,
-            ) => {
-                depth++;
-                context.emit(depth, `# ${instruction.toUpperCase()}`);
-
-                // Compile first argument
-                dispatchExpressionCompile(ast.left, context, depth);
-
-                // Compile second argument
-                dispatchExpressionCompile(ast.right, context, depth);
-
-                // Must POP _after_ both have been compiled
-                context.emit(depth, `POP RAX`);
-                context.emit(depth, `XCHG [RSP], RAX`);
-
-                // Reset RDX for DIV
-                if (instruction.toUpperCase() === 'DIV') {
-                    context.emit(depth, `XOR RDX, RDX`);
-                }
-
-                // Compiler operation
-                context.emit(depth, `${instruction.toUpperCase()} QWORD PTR [RSP]`);
-
-                // Swap the top of the stack
-                context.emit(depth, `MOV [RSP], ${outRegister}`);
-            };
-
-            return {
-                '+': prepareGeneral('add'),
-                '-': prepareGeneral('sub'),
-                '&': prepareGeneral('and'),
-                '|': prepareGeneral('or'),
-                '=': prepareGeneral('mov'),
-                '*': prepareRax('mul'),
-                '/': prepareRax('div'),
-                '%': prepareRax('div', 'RDX'),
-            };
-        })()
-
-        return X86OpMap[this.ast.operator](this.ast, context, depth)
+        return X86ArithmeticMap[this.ast.operator](this.ast, context, depth)
     }
 }
 
@@ -207,6 +247,9 @@ export class MemberExpression extends Tree {
         }
         return nullFn
     }
+
+    compile(context: X86Context, depth: number = 0) {
+    }
 }
 
 export class CallExpression extends Tree {
@@ -230,13 +273,13 @@ export class CallExpression extends Tree {
         return code;
     }
 
-    transformArgs(context: Context) {
-        return this.ast.arguments.map((arg) => {
-            return dispatchExpressionEvaluation(arg as ESTree.Expression, context)
-        })
-    }
-
     evaluate(context: Context) {
+        function transformArgs(args: ESTree.CallExpression['arguments'], context: Context) {
+            return args.map((arg) => {
+                return dispatchExpressionEvaluation(arg as ESTree.Expression, context)
+            })
+        }
+
         let fn: Function = nullFn,
             { callee } = this.ast
 
@@ -247,48 +290,52 @@ export class CallExpression extends Tree {
                 break;
         }
 
-        fn.apply(null, this.transformArgs(context))
+        fn.apply(null, transformArgs(this.ast.arguments, context))
         let ret = context.env.getReturnValue()
         return ret
     }
 
     compile(context: X86Context, depth: number = 0) {
-        let { callee } = this.ast,
-            args = this.ast.arguments,
-            fun = '',
-            scope = context.env;
+        
+        function compileCall(ast:ESTree.CallExpression,context:X86Context,depth:number=0) {
+            let args = ast.arguments,
+                scope = context.env,
+                fun = ast.callee.type === NodeTypes.Identifier ? ast.callee.name : 'undefined-function';
+            // Compile registers and store on the stack
+            args.map((arg) => dispatchExpressionCompile(arg, context, depth));
 
-        switch (callee.type) {
-            case NodeTypes.Identifier: fun = callee.name;
-                break;
-            // case NodeTypes.MemberExpression: throw Error('Unsupported console callee compile');
-            //     break;
-            default: throw Error(`Unsupported callee type ${callee.type} compile`);
+            const fn = scope.lookup(fun);
+
+            if (fn) {
+                context.emit(depth, `CALL ${fn.name}`);
+            } else {
+                throw new Error('Attempt to call undefined function: ' + fun);
+            }
+
+            if (args.length > 1) {
+                /**
+                 * Drop the args
+                 * reset stack pointer
+                 */
+                context.emit(depth, `ADD RSP, ${args.length * 8}`);
+            }
+
+            if (args.length === 1) {
+                context.emit(depth, `MOV [RSP], RAX\n`);
+            } else {
+                context.emit(depth, 'PUSH RAX\n');
+            }
         }
+      
+        switch (this.ast.callee.type) {
 
-        // Compile registers and store on the stack
-        args.map((arg) => dispatchExpressionCompile(arg, context, depth));
+            case NodeTypes.Identifier: 
+                return compileCall(this.ast,context,depth)
 
-        const fn = scope.lookup(fun);
+            case NodeTypes.MemberExpression:
+                return X86SysCallMap[ new MemberExpression(this.ast.callee).toCode() ]( this.ast, context, depth );
 
-        if (fn) {
-            context.emit(depth, `CALL ${fn.name}`);
-        } else {
-            throw new Error('Attempt to call undefined function: ' + fun);
-        }
-
-        if (args.length > 1) {
-            /**
-             * Drop the args
-             * reset stack pointer
-             */
-            context.emit(depth, `ADD RSP, ${args.length * 8}`);
-        }
-
-        if (args.length === 1) {
-            context.emit(depth, `MOV [RSP], RAX\n`);
-        } else {
-            context.emit(depth, 'PUSH RAX\n');
+            default: throw Error(`Unsupported callee type ${this.ast.callee.type} compile`);
         }
     }
 }
@@ -327,7 +374,7 @@ export function dispatchExpressionEvaluation(expression: ESTree.Expression, cont
 
 export function dispatchExpressionCompile(expression: ESTree.Expression | ESTree.SpreadElement, context: X86Context, depth: number = 0) {
     switch (expression.type) {
-        case NodeTypes.Identifier: return new Identifier(expression).compile(context,depth);
+        case NodeTypes.Identifier: return new Identifier(expression).compile(context, depth);
         case NodeTypes.Literal: return new Literal(expression).compile(context, depth);
         case NodeTypes.BinaryExpression: return new BinaryExpression(expression).compile(context, depth);
         case NodeTypes.CallExpression: return new CallExpression(expression).compile(context, depth)

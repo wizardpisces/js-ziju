@@ -124,6 +124,7 @@ export class FunctionDeclaration extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
+        depth++;
         let { body, id, params } = this.ast
         let safe = 'defaultFunctionName'
         
@@ -163,7 +164,7 @@ export class FunctionDeclaration extends Tree {
         new BlockStatement(body).compile(context,depth)
 
         // Save the return value
-        context.emit(0, '');
+        // context.emit(0, '');
         context.emit(depth, `POP RAX`);
         context.emit(depth, `POP RBP\n`);
 

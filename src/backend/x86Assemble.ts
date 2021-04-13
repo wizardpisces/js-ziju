@@ -3,7 +3,7 @@ import { X86Context } from "@/environment/context";
 export type Platform = 'darwin' | 'linux'
 export type SystemCall = { 'write': number, 'exit': number }
 
-const SYSCALL_MAP: SystemCall = {
+export const SYSCALL_MAP: SystemCall = {
     darwin: {
         exit: 0x2000001,
         write: 0x2000004,

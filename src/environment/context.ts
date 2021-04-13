@@ -25,7 +25,7 @@ function baseCreateContext(type: keyof typeof EnvironmentTypeMap = 'interpret'):
             env: EnvironmentTypeMap[type],
             assembly: '',
             emit(depth = 0, code: string) {
-                context.assembly += ' '.repeat(depth) + code + '\n';
+                context.assembly += '  '.repeat(depth) + code + '\n';
             }
         }
         return context
