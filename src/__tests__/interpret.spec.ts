@@ -1,12 +1,7 @@
 import {
     Interpreter
 } from '../index'
-import fs from 'fs'
-import path from 'path'
-
-function readSource(src) {
-    return fs.readFileSync(path.join(process.cwd(), src), 'utf8')
-}
+import {readSource} from './utils'
 
 describe('interpret', () => {
     

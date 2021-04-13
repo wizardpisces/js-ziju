@@ -2,7 +2,7 @@ import ESTree from 'estree'
 // acorn: The return value will be an abstract syntax tree object as specified by the ESTree spec
 import { parse } from 'acorn'
 import { Program } from './tree/Program'
-import { createContext } from './environment/context';
+import {createX86Context } from './environment/context';
 
 export class Assembler {
     ast: any
@@ -10,7 +10,7 @@ export class Assembler {
         this.ast = parse(code, { ecmaVersion: 2020 });
     }
     compile() {
-        let context = createContext();
+        let context = createX86Context();
         
         new Program(this.ast as ESTree.Program).compile(context)
 

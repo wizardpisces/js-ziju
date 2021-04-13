@@ -1,9 +1,10 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
-import { Context } from '../environment/context'
+import { Context, X86Context } from '../environment/context'
 import { ExpressionStatement } from './expression'
 import { dispatchStatementCompile, dispatchStatementEvaluation} from './statement'
+import { emitPostfix, emitPrefix } from '../backend/x86Assemble'
 
 export class Program extends Tree {
     ast!: ESTree.Program
@@ -33,9 +34,14 @@ export class Program extends Tree {
         })
     }
 
-    compile(context:Context){
+    compile(context:X86Context){
+
+        emitPrefix(context)
+
         this.ast.body.forEach(node => {
-            dispatchStatementCompile(node as ESTree.Statement, context)
+            dispatchStatementCompile(node as ESTree.Statement, context, 0)
         })
+
+        emitPostfix(context)
     }
 }

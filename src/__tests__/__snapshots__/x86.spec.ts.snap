@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`compiler x86 functionCall 1`] = `
+" .global _main
+
+ .text
+
+_main:
+ CALL main
+ MOV RDI, RAX
+ MOV RAX, 33554433
+ SYSCALL
+"
+`;

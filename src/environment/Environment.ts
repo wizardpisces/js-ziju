@@ -53,7 +53,7 @@ export class Environment extends BaseEnvironment{
         return new Environment(this);
     }
 
-    lookup(name: string, kind: Kind) {
+    lookup(name: string, kind: Kind):Environment | undefined {
         let scope: Environment | null = this;
         while (scope) {
             if (scope.vars[kind] && scope.vars[kind][name])
