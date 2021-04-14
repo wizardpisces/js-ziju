@@ -48,33 +48,13 @@ print:
 
   RET
 
-add:
-  PUSH RBP
-  MOV RBP, RSP
-
-    # ADD
-    PUSH [RBP + 24] # a
-    PUSH [RBP + 16] # b
-    POP RAX
-    ADD [RSP], RAX
-    # End ADD
-  CALL print
-  MOV [RSP], RAX
-
-  POP RAX
-  POP RBP
-
-  RET
-
 main:
   PUSH RBP
   MOV RBP, RSP
 
-  PUSH 2
   PUSH 3
-  CALL add
-  ADD RSP, 16
-  PUSH RAX
+  CALL print
+  MOV [RSP], RAX
 
   POP RAX
   POP RBP

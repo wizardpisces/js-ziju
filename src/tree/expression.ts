@@ -153,6 +153,19 @@ export class Identifier extends Tree {
 
     compile(context: X86Context, depth: number = 0) {
         const name = this.ast.name;
+
+        // support kernel print starts with $$ is address 
+        if ((name).startsWith('$$')) {
+            const { offset } = context.env.lookup(name) as X86NamePointer;
+            // Copy the frame pointer so we can return an offset from it
+            context.emit(depth, `MOV RAX, RBP`);
+            const operation = offset < 0 ? 'ADD' : 'SUB';
+            context.emit(depth, `${operation} RAX, ${Math.abs(offset * 8)} # ${name}`);
+            context.emit(depth, `PUSH RAX`);
+            return;
+        }
+
+        // js variable
         const { offset } = context.env.lookup(name) as X86NamePointer;
         if (offset) {
             const operation = offset < 0 ? '+' : '-';

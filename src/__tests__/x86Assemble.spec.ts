@@ -1,11 +1,19 @@
 import {
   Assembler
 } from '../index'
-import { build, readSource } from './utils'
+import { build, readSourceWithKernal } from './utils'
 
 describe('compiler x86', () => {
+  it('print', () => {
+    let result = new Assembler(readSourceWithKernal('tests/asm/print.js')).compile()
+
+    expect(result.assembly).toMatchSnapshot()
+
+    build(result.assembly,'print')
+  });
+
   it('functionCall', () => {
-    let result = new Assembler(readSource('tests/asm/functionCall.js')).compile()
+    let result = new Assembler(readSourceWithKernal('tests/asm/functionCall.js')).compile()
 
     expect(result.assembly).toMatchSnapshot()
 

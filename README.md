@@ -78,5 +78,6 @@ npm run jest
 ## Refenrece
 
 * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
+* [making-system-calls-from-assembly-in-mac-os-x](https://filippo.io/making-system-calls-from-assembly-in-mac-os-x/)
 * [compiler-basics-lisp-to-assembly](https://notes.eatonphil.com/compiler-basics-lisp-to-assembly.html)
-* https://idea.popcount.org/2013-07-24-ir-is-better-than-assembly/
+* [ir-is-better-than-assembly](https://idea.popcount.org/2013-07-24-ir-is-better-than-assembly/)
