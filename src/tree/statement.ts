@@ -39,10 +39,19 @@ export class ReturnStatement extends Tree {
         return false
     }
 
-    compile(context,depth:number=0){
+    compile(context:X86Context,depth:number=0){
         if (this.ast.argument) {
             dispatchExpressionCompile(this.ast.argument, context, depth)
         }
+
+        /**
+         * save whatever to RAX for return
+         * TODOS: how to resolve function without a return
+         */
+        // context.emit(depth,'MOV RAX, [RSP]');
+
+        // context.emit(depth, `POP RAX`);
+
         return false;
     }
 }

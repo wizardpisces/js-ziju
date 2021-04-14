@@ -58,9 +58,6 @@ add:
     POP RAX
     ADD [RSP], RAX
     # End ADD
-  CALL print
-  MOV [RSP], RAX
-
   POP RAX
   POP RBP
 
@@ -75,6 +72,9 @@ main:
   CALL add
   ADD RSP, 16
   PUSH RAX
+
+  CALL print
+  MOV [RSP], RAX
 
   POP RAX
   POP RBP
