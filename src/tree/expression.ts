@@ -324,7 +324,7 @@ export class CallExpression extends Tree {
             } else {
                 throw new Error('Attempt to call undefined function: ' + fun);
             }
-
+            
             if (args.length > 1) {
                 /**
                  * Drop the args

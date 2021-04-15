@@ -13,4 +13,6 @@ function print(n){
     // }
     // 48 is the ASCII code for '0'
     printChar(48 + n % 10);
+
+    // printChar(13); // 换行
 }

@@ -67,7 +67,12 @@ main:
   PUSH RBP
   MOV RBP, RSP
 
+  PUSH 1
   PUSH 2
+  CALL add
+  ADD RSP, 16
+  PUSH RAX
+
   PUSH 3
   CALL add
   ADD RSP, 16
