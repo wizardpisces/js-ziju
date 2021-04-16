@@ -17,7 +17,7 @@ const internal = {
  * TODOS: 多参数跟字符串的输出需要做处理，目前只支持不超过10的单参数log，eg: console.log(6)
  */
 
-const X86SysCallMap = (function prepareSyscallWrappers() {
+const X86_MASM_SysCall_Map = (function prepareSyscallWrappers() {
     type SysFunction = (ast: ESTree.CallExpression, context: X86Context, depth?: number) => void
     const sysCallMap = {
         write: 'console.log',
@@ -51,7 +51,7 @@ const X86SysCallMap = (function prepareSyscallWrappers() {
     return wrappers;
 })()
 
-const X86ArithmeticMap = (function prepareArithmeticWrappers() {
+const X86_MASM_Math_Logic_Map = (function prepareArithmeticAndLogicalWrappers() {
     // General operatations
     const prepareGeneral = (instruction: string) => (ast: ESTree.BinaryExpression, context: X86Context, depth: number = 0) => {
         depth++;
@@ -101,7 +101,57 @@ const X86ArithmeticMap = (function prepareArithmeticWrappers() {
         context.emit(depth, `MOV [RSP], ${outRegister}`);
     };
 
-    return {
+    const prepareComparison = (operator: string) => {
+        return {
+            [operator]: (ast: ESTree.BinaryExpression,
+                context: X86Context,
+                depth: number = 0,) => {
+                depth++;
+                context.emit(depth, `# ${operator}`);
+
+                // Compile first argument, store in RAX
+                dispatchExpressionCompile(ast.left, context, depth);
+
+                // Compile second argument
+                dispatchExpressionCompile(ast.right, context, depth);
+
+                context.emit(depth, `POP RAX`);
+
+                // Compile operation
+                context.emit(depth, `CMP [RSP], RAX`);
+
+                // Reset RAX to serve as CMOV* dest, MOV to keep flags (vs. XOR)
+                context.emit(depth, `MOV RAX, 0`);
+
+                // Conditional set [RSP]
+                const operation = {
+                    '>': 'CMOVA',
+                    '>=': 'CMOVAE',
+                    '<': 'CMOVB',
+                    '<=': 'CMOVBE',
+                    '==': 'CMOVE',
+                    '!=': 'CMOVNE',
+                }[operator];
+                // CMOV* requires the source to be memory or register
+                context.emit(depth, `MOV DWORD PTR [RSP], 1`);
+                // CMOV* requires the dest to be a register
+                context.emit(depth, `${operation} RAX, [RSP]`);
+                context.emit(depth, `MOV [RSP], RAX`);
+                context.emit(depth, `# End ${operator}`);
+            },
+        };
+    };
+
+    const logicalWrappers = {
+        ...prepareComparison('>'),
+        ...prepareComparison('>='),
+        ...prepareComparison('<'),
+        ...prepareComparison('<='),
+        ...prepareComparison('=='),
+        ...prepareComparison('!='),
+    };
+
+    const arithmaticWrappers = {
         '+': prepareGeneral('add'),
         '-': prepareGeneral('sub'),
         '&': prepareGeneral('and'),
@@ -109,8 +159,13 @@ const X86ArithmeticMap = (function prepareArithmeticWrappers() {
         '=': prepareGeneral('mov'),
         '*': prepareRax('mul'),
         '/': prepareRax('div'),
-        '%': prepareRax('div', 'RDX'),
+        '%': prepareRax('div', 'RDX')
     };
+
+    return {
+        ...logicalWrappers,
+        ...arithmaticWrappers
+    }
 })()
 
 export class Literal extends Tree {
@@ -193,7 +248,7 @@ export class BinaryExpression extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        return X86ArithmeticMap[this.ast.operator](this.ast, context, depth)
+        return X86_MASM_Math_Logic_Map[this.ast.operator](this.ast, context, depth)
     }
 }
 
@@ -309,8 +364,8 @@ export class CallExpression extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        
-        function compileCall(ast:ESTree.CallExpression,context:X86Context,depth:number=0) {
+
+        function compileCall(ast: ESTree.CallExpression, context: X86Context, depth: number = 0) {
             let args = ast.arguments,
                 scope = context.env,
                 fun = ast.callee.type === NodeTypes.Identifier ? ast.callee.name : 'undefined-function';
@@ -324,7 +379,7 @@ export class CallExpression extends Tree {
             } else {
                 throw new Error('Attempt to call undefined function: ' + fun);
             }
-            
+
             if (args.length > 1) {
                 /**
                  * Drop the args
@@ -339,14 +394,14 @@ export class CallExpression extends Tree {
                 context.emit(depth, 'PUSH RAX\n');
             }
         }
-      
+
         switch (this.ast.callee.type) {
 
-            case NodeTypes.Identifier: 
-                return compileCall(this.ast,context,depth)
+            case NodeTypes.Identifier:
+                return compileCall(this.ast, context, depth)
 
             case NodeTypes.MemberExpression:
-                return X86SysCallMap[ new MemberExpression(this.ast.callee).toCode() ]( this.ast, context, depth );
+                return X86_MASM_SysCall_Map[new MemberExpression(this.ast.callee).toCode()](this.ast, context, depth);
 
             default: throw Error(`Unsupported callee type ${this.ast.callee.type} compile`);
         }

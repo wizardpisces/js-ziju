@@ -6,6 +6,7 @@ import { Tree } from './Tree'
 import { ExpressionStatement } from './expression'
 import { VariableDeclaration } from './VariableDeclaration'
 import { Environment, Kind } from '../environment/Environment';
+import { incGlobalCounter} from './util'
 
 export class BlockStatement extends Tree {
     ast!: ESTree.BlockStatement
@@ -20,7 +21,7 @@ export class BlockStatement extends Tree {
         return this.ast.body.every((statement: ESTree.Statement) => dispatchStatementEvaluation(statement, context))
     }
 
-    compile(context:X86Context,depth:number=0){
+    compile(context: X86Context, depth: number = 0) {
         return this.ast.body.every((statement: ESTree.Statement) => dispatchStatementCompile(statement, context, depth))
     }
 }
@@ -39,7 +40,7 @@ export class ReturnStatement extends Tree {
         return false
     }
 
-    compile(context:X86Context,depth:number=0){
+    compile(context: X86Context, depth: number = 0) {
         if (this.ast.argument) {
             dispatchExpressionCompile(this.ast.argument, context, depth)
             /**
@@ -51,7 +52,7 @@ export class ReturnStatement extends Tree {
             // context.emit(depth, `POP RAX`);
         }
 
-    
+
         return false;
     }
 }
@@ -99,6 +100,41 @@ export class IfStatement extends Tree {
 
         return true
     }
+
+    compile(context: X86Context, depth: number = 0): boolean {
+        const {test,consequent,alternate} = this.ast
+        context.emit(depth, '# If');
+        // Compile test
+        dispatchExpressionCompile(test,context,depth)
+
+        let branch = `else_branch` + incGlobalCounter();
+        // Must pop/use up argument in test
+        context.emit(0, '');
+        context.emit(depth, `POP RAX`);
+        context.emit(depth, `TEST RAX, RAX`);
+        context.emit(depth, `JZ .${branch}\n`);
+
+        // Compile then section
+        context.emit(depth, `# If then`);
+
+        dispatchStatementCompile(consequent,context,depth)
+
+        context.emit(depth, `JMP .after_${branch}\n`);
+
+        // Compile else section
+        context.emit(depth, `# If else`);
+        context.emit(0, `.${branch}:`);
+        if (alternate) {
+            dispatchStatementCompile(alternate, context, depth)
+        } else {
+            context.emit(1, 'PUSH 0 # Null else branch');
+        }
+
+        context.emit(0, `.after_${branch}:`);
+        context.emit(depth, '# End if');
+
+        return true
+    }
 }
 
 export class FunctionDeclaration extends Tree {
@@ -136,11 +172,11 @@ export class FunctionDeclaration extends Tree {
         depth++;
         let { body, id, params } = this.ast
         let safe = 'defaultFunctionName'
-        
+
         // Add this function to outer scope
-        if(id){
+        if (id) {
             safe = context.env.assign(id.name);
-        }else{
+        } else {
             throw Error('Do not support function name null yet!!')
         }
 
@@ -156,7 +192,7 @@ export class FunctionDeclaration extends Tree {
         // just references them from the caller. They will need to
         // be copied in to support mutation of arguments if that's
         // ever a desire.
-        params.forEach((param:ESTree.Pattern, i) => {
+        params.forEach((param: ESTree.Pattern, i) => {
             if (param.type === NodeTypes.Identifier) {
                 /**
                  * keep param offset from RBP when invoked, 
@@ -170,7 +206,7 @@ export class FunctionDeclaration extends Tree {
 
         context.env = childScope
         // Pass childScope in for reference when body is compiled.
-        new BlockStatement(body).compile(context,depth)
+        new BlockStatement(body).compile(context, depth)
 
         // Save the return value
         // context.emit(0, '');
@@ -196,22 +232,23 @@ export function dispatchStatementEvaluation(statement: ESTree.Statement, context
         case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
         case NodeTypes.IfStatement: return new IfStatement(statement).evaluate(context)
         case NodeTypes.ReturnStatement: return new ReturnStatement(statement).evaluate(context)
-        default: throw Error('Unknown statement ' + statement)
+        default: throw Error('Unknown statement ' + statement.type)
     }
-    
+
     return true;
 }
 
-export function dispatchStatementCompile(statement: ESTree.Statement, context: X86Context, depth:number=0): boolean {
+export function dispatchStatementCompile(statement: ESTree.Statement, context: X86Context, depth: number = 0): boolean {
 
     switch (statement.type) {
         case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).compile(context, depth); break;
         case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).compile(context, depth); break;
         // case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
         // case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
-        // case NodeTypes.IfStatement: return new IfStatement(statement).evaluate(context)
-        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).compile(context,depth);
-        default: throw Error('Unknown statement ' + statement)
+        case NodeTypes.IfStatement: return new IfStatement(statement).compile(context, depth);
+        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).compile(context, depth);
+        case NodeTypes.BlockStatement: return new BlockStatement(statement).compile(context, depth);
+        default: throw Error('Unknown statement ' + statement.type)
     }
 
     return true;

@@ -19,4 +19,12 @@ describe('compiler x86', () => {
 
     build(result.assembly,'functionCall')
   });
+
+  it('functionCall', () => {
+    let result = new Assembler(readSourceWithKernal('tests/asm/fib.js')).compile()
+
+    expect(result.assembly).toMatchSnapshot()
+
+    build(result.assembly,'fib')
+  });
 });
