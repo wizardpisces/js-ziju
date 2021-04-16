@@ -131,6 +131,8 @@ const X86_MASM_Math_Logic_Map = (function prepareArithmeticAndLogicalWrappers() 
                     '<=': 'CMOVBE',
                     '==': 'CMOVE',
                     '!=': 'CMOVNE',
+                    '===': 'CMOVE',
+                    '!==': 'CMOVNE',
                 }[operator];
                 // CMOV* requires the source to be memory or register
                 context.emit(depth, `MOV DWORD PTR [RSP], 1`);
@@ -149,6 +151,8 @@ const X86_MASM_Math_Logic_Map = (function prepareArithmeticAndLogicalWrappers() 
         ...prepareComparison('<='),
         ...prepareComparison('=='),
         ...prepareComparison('!='),
+        ...prepareComparison('==='),
+        ...prepareComparison('!=='),
     };
 
     const arithmaticWrappers = {

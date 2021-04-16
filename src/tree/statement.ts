@@ -68,9 +68,7 @@ export class WhileStatement extends Tree {
             let binaryExpression = new BinaryExpression(this.ast.test);
 
             while (binaryExpression.evaluate(context)) {
-                if (this.ast.body.type === NodeTypes.BlockStatement) {
-                    return new BlockStatement(this.ast.body).evaluate(context)
-                }
+                return dispatchStatementEvaluation(this.ast.body,context)
             }
         }
         return true
@@ -232,6 +230,7 @@ export function dispatchStatementEvaluation(statement: ESTree.Statement, context
         case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
         case NodeTypes.IfStatement: return new IfStatement(statement).evaluate(context)
         case NodeTypes.ReturnStatement: return new ReturnStatement(statement).evaluate(context)
+        case NodeTypes.BlockStatement: return new BlockStatement(statement).evaluate(context)
         default: throw Error('Unknown statement ' + statement.type)
     }
 

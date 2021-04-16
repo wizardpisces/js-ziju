@@ -20,4 +20,8 @@ describe('interpret', () => {
     it('twoFunctionCall', () => {
         new Interpreter(readSource('tests/twoFunctionCall.js')).interpret()
     });
+
+    it('fib-non-recursive', () => {
+        new Interpreter(readSource('tests/fib-non-recursive.js')).interpret()
+    });
 });
