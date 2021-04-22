@@ -1,18 +1,14 @@
-# TODOS
-* build to NASM
-* implement vm to run NASM
-* build to LLVM IR
+# Todos
+* 3111 > 10 number is not printable yet
+* compile to LLVM IR
+* compile to c++/v8
+    * reference [jsc](https://github.com/eatonphil/jsc)
+* compile to NASM and implement vm(reference [a-virtual-machine](http://craftinginterpreters.com/a-virtual-machine.html)) to run NASM
 
+# 现阶段的问题
 ## 目前实现的 MASM 汇编的问题:
 
-目前函数体内只支持一个表达式， 多个就会出现内存问题
-### 原因：
-每个表达式都会往stack push一个值
-如果没被 callExpression等表达式消化掉就会导致内存异常
-#### 优点：
-轻松支持多个参数传递
-#### 缺点：
-函数体内**只能支持一个表达式**，同时也是返回，最后一个表达式 push stack的值会在函数体最后的pop rax消化
+目前BlockStatement嵌套，并且包含多条Expression的时候会解析会有问题，因为嵌套后里面再有更多条Expression
 
 ### 如何 fix
 implement
@@ -20,8 +16,3 @@ implement
 [The 64 bit x86 C Calling Convention](https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf)
 
 
-
-# 尝试
-Babel-parse, Babel-traverse, Babel-plugins, Babel-template, Babel-generator, Babel-register，动态编译
-
-如何实现 traverse，如何理解 Path 是 node之上的抽象层

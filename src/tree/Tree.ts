@@ -14,7 +14,6 @@ export class Tree {
     ast: any
     constructor(ast: any) {
         this.ast = ast
-        // console.log(this.constructor.name)
     }
     toCode(): string {
         return ''

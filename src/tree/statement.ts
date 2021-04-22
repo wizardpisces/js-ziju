@@ -22,7 +22,15 @@ export class BlockStatement extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        return this.ast.body.every((statement: ESTree.Statement) => dispatchStatementCompile(statement, context, depth))
+        let length = this.ast.body.length
+
+        return this.ast.body.every((statement: ESTree.Statement,i:number) =>{
+            let result = dispatchStatementCompile(statement, context, depth)
+            if (i < length - 1) {
+                context.emit(depth, `POP RAX # Ignore non-final expression`);
+            }
+            return result
+        })
     }
 }
 export class ReturnStatement extends Tree {

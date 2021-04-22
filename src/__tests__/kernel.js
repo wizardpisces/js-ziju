@@ -7,12 +7,15 @@ function printChar($$c){
     console.log(1,$$c,1)
 }
 
-function print(n){
-    // if(n>9){
-    //     print(n/9)
-    // }
+function printHelper(n) {
+    if(n>9){
+        printHelper(n / 10)
+    }
     // 48 is the ASCII code for '0'
     printChar(48 + n % 10);
+}
 
-    // printChar(13); // 换行
+function print(n){
+    printHelper(n)
+    printChar(10); // 换行
 }

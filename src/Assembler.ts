@@ -19,4 +19,14 @@ export class Assembler {
             assembly: context.assembly
         }
     }
+    // llvmCompile() {
+    //     let context = createX86Context();
+        
+    //     new Program(this.ast as ESTree.Program).llvmCompile(context)
+
+    //     return {
+    //         ast: this.ast,
+    //         assembly: context.assembly
+    //     }
+    // }
 }
