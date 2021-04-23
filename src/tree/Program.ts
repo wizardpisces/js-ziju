@@ -1,9 +1,9 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
-import { Context, X86Context } from '../environment/context'
+import { Context, LLVMContext, X86Context } from '../environment/context'
 import { ExpressionStatement } from './expression'
-import { dispatchStatementCompile, dispatchStatementEvaluation} from './statement'
+import { dispatchStatementCompile, dispatchStatementEvaluation, dispathStatementLLVMCompile} from './statement'
 import { emitPostfix, emitPrefix } from '../backend/x86Assemble'
 
 export class Program extends Tree {
@@ -43,5 +43,11 @@ export class Program extends Tree {
         })
 
         emitPostfix(context)
+    }
+
+    llvmCompile(context:LLVMContext){
+        this.ast.body.forEach(node => {
+            dispathStatementLLVMCompile(node as ESTree.Statement, context, context.env.scope.symbol())
+        })
     }
 }

@@ -1,4 +1,6 @@
 function tailFib(n1, n2, n) {
+    console.trace();
+
     if (n === 0) {
         return n1
     }
@@ -9,8 +11,4 @@ function fibHelper(n) {
     return tailFib(0, 1, n)
 }
 
-function main() {
-    console.log(fibHelper(5))
-}
-
-main()
+console.log(fibHelper(2))

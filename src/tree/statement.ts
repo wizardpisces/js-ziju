@@ -1,4 +1,4 @@
-import { Context, X86Context } from '@/environment/context'
+import { Context, LLVMContext, X86Context } from '@/environment/context'
 import ESTree from 'estree'
 import { NodeTypes } from './ast';
 import { BinaryExpression, dispatchExpressionCompile, dispatchExpressionEvaluation } from './expression';
@@ -6,7 +6,8 @@ import { Tree } from './Tree'
 import { ExpressionStatement } from './expression'
 import { VariableDeclaration } from './VariableDeclaration'
 import { Environment, Kind } from '../environment/Environment';
-import { incGlobalCounter} from './util'
+import { incGlobalCounter } from './util'
+import { LLVMNamePointer } from '../backend/llvmAssemble'
 
 export class BlockStatement extends Tree {
     ast!: ESTree.BlockStatement
@@ -24,13 +25,16 @@ export class BlockStatement extends Tree {
     compile(context: X86Context, depth: number = 0) {
         let length = this.ast.body.length
 
-        return this.ast.body.every((statement: ESTree.Statement,i:number) =>{
+        return this.ast.body.every((statement: ESTree.Statement, i: number) => {
             let result = dispatchStatementCompile(statement, context, depth)
             if (i < length - 1) {
                 context.emit(depth, `POP RAX # Ignore non-final expression`);
             }
             return result
         })
+    }
+    llvmCompile(context: LLVMContext, destination: LLVMNamePointer) {
+        return this.ast.body.every((statement: ESTree.Statement) => dispathStatementLLVMCompile(statement, context, destination))
     }
 }
 export class ReturnStatement extends Tree {
@@ -44,7 +48,6 @@ export class ReturnStatement extends Tree {
             let result = dispatchExpressionEvaluation(this.ast.argument, context)
             context.env.setReturnValue(result)
         }
-
         return false
     }
 
@@ -60,6 +63,11 @@ export class ReturnStatement extends Tree {
             // context.emit(depth, `POP RAX`);
         }
 
+        return false;
+    }
+
+    llvmCompile(context:LLVMContext, destination:LLVMNamePointer){
+        context.emit(1, `ret ${destination.type} %${destination.value}`);
 
         return false;
     }
@@ -76,7 +84,7 @@ export class WhileStatement extends Tree {
             let binaryExpression = new BinaryExpression(this.ast.test);
 
             while (binaryExpression.evaluate(context)) {
-                return dispatchStatementEvaluation(this.ast.body,context)
+                return dispatchStatementEvaluation(this.ast.body, context)
             }
         }
         return true
@@ -108,10 +116,10 @@ export class IfStatement extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0): boolean {
-        const {test,consequent,alternate} = this.ast
+        const { test, consequent, alternate } = this.ast
         context.emit(depth, '# If');
         // Compile test
-        dispatchExpressionCompile(test,context,depth)
+        dispatchExpressionCompile(test, context, depth)
 
         let branch = `else_branch` + incGlobalCounter();
         // Must pop/use up argument in test
@@ -123,7 +131,7 @@ export class IfStatement extends Tree {
         // Compile then section
         context.emit(depth, `# If then`);
 
-        dispatchStatementCompile(consequent,context,depth)
+        dispatchStatementCompile(consequent, context, depth)
 
         context.emit(depth, `JMP .after_${branch}\n`);
 
@@ -221,6 +229,46 @@ export class FunctionDeclaration extends Tree {
 
         context.emit(depth, 'RET\n');
     }
+
+    llvmCompile(context: LLVMContext, _: LLVMNamePointer) {
+        let { env } = context,
+            { body, id, params } = this.ast,
+            fn: LLVMNamePointer;
+
+        // Add this function to outer context.scope
+        if (id) {
+            fn = env.scope.register(id.name);
+        } else {
+            throw Error('Do not support function name null yet!!')
+        }
+
+        // Copy outer env.scope so parameter mappings aren't exposed in outer env.scope.
+        const childContext = env.copy();
+        childContext.tailCallTree.push(fn.value);
+
+        const safeParams: LLVMNamePointer[] = params.map((param: ESTree.Pattern) => {
+            if (param.type === NodeTypes.Identifier) {
+                // Store parameter mapped to associated local
+                return childContext.scope.register(param.name);
+            } else {
+                throw Error('[llvmCompile]: Unknown param type ' + param.type)
+            }
+        });
+
+        context.emit(
+            0,
+            `define i64 @${fn.value}(${safeParams
+                .map((p: LLVMNamePointer) => `${p.type} %${p.value}`)
+                .join(', ')}) {`,
+        );
+
+        // Pass childContext in for reference when body is compiled.
+        const ret = childContext.scope.symbol();
+
+        new BlockStatement(body).llvmCompile({ ...context, env: childContext }, ret)
+
+        context.emit(0, '}\n');
+    }
 }
 
 
@@ -255,6 +303,23 @@ export function dispatchStatementCompile(statement: ESTree.Statement, context: X
         case NodeTypes.IfStatement: return new IfStatement(statement).compile(context, depth);
         case NodeTypes.ReturnStatement: return new ReturnStatement(statement).compile(context, depth);
         case NodeTypes.BlockStatement: return new BlockStatement(statement).compile(context, depth);
+        default: throw Error('Unknown statement ' + statement.type)
+    }
+
+    return true;
+}
+
+export function dispathStatementLLVMCompile(statement: ESTree.Statement, context: LLVMContext, destination: LLVMNamePointer): boolean {
+
+    switch (statement.type) {
+        case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).llvmCompile(context, destination); break;
+        // case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).compile(context, depth); break;
+        case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).llvmCompile(context, destination); break;
+        // case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
+        // case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
+        // case NodeTypes.IfStatement: return new IfStatement(statement).compile(context, depth);
+        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).llvmCompile(context, destination);
+        // case NodeTypes.BlockStatement: return new BlockStatement(statement).compile(context, depth);
         default: throw Error('Unknown statement ' + statement.type)
     }
 

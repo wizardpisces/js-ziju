@@ -2,7 +2,7 @@ import ESTree from 'estree'
 // acorn: The return value will be an abstract syntax tree object as specified by the ESTree spec
 import { parse } from 'acorn'
 import { Program } from './tree/Program'
-import {createX86Context } from './environment/context';
+import {createLLVMContext, createX86Context } from './environment/context';
 
 export class Assembler {
     ast: any
@@ -19,14 +19,14 @@ export class Assembler {
             assembly: context.assembly
         }
     }
-    // llvmCompile() {
-    //     let context = createX86Context();
+    llvmCompile() {
+        let context = createLLVMContext();
         
-    //     new Program(this.ast as ESTree.Program).llvmCompile(context)
+        new Program(this.ast as ESTree.Program).llvmCompile(context)
 
-    //     return {
-    //         ast: this.ast,
-    //         assembly: context.assembly
-    //     }
-    // }
+        return {
+            ast: this.ast,
+            assembly: context.assembly
+        }
+    }
 }

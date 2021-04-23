@@ -1,6 +1,8 @@
 import os from 'os';
 import ESTree from 'estree'
 import { X86Context } from "@/environment/context";
+import { X86NamePointer } from '@/environment/X86-Environment';
+export * from '@/environment/X86-Environment'
 export type Platform = 'darwin' | 'linux'
 export type SystemCall = { 'write': number, 'exit': number }
 
@@ -29,42 +31,6 @@ export function emitPostfix(context: X86Context) {
     context.emit(1, 'SYSCALL');
 }
 
-export type X86NamePointer = { name: string, offset: number }
-export class X86Environment {
-    localOffset: number
-    map: Record<string, number>
-    constructor() {
-        this.localOffset = 1;
-        this.map = {};
-    }
-
-    assign(name: string): string {
-        const safe = name.replace('-', '_');
-        this.map[safe] = this.localOffset++;
-        return safe;
-    }
-
-    symbol(): number {
-        return this.localOffset++;
-    }
-
-    lookup(name: string): X86NamePointer | null {
-        const safe = name.replace('-', '_');
-        if (this.map[safe]) {
-            return { name: safe, offset: this.map[safe] };
-        }
-
-        return null;
-    }
-
-    copy(): X86Environment {
-        const s = new X86Environment();
-        // In the future we may need to store s.scopeOffset = this.scopeOffset + 1
-        // so we can read outer-scoped values at runtime.
-        s.map = { ...this.map };
-        return s;
-    }
-}
 
 export function identifierCompile(ast:ESTree.Identifier, context: X86Context, depth: number) {
     const { name } = ast

@@ -1,10 +1,11 @@
 import ESTree from 'estree'
 import { Tree } from './Tree'
 import { NodeTypes } from './ast'
-import { Context, X86Context } from '../environment/context'
+import { Context, LLVMContext, X86Context } from '../environment/context'
 import { Kind } from '../environment/Environment'
 import { get_X86_MASM_Math_Logic_Map, get_X86_MASM_SysCall_Map, identifierCompile } from '../backend/x86Assemble'
 import { opAcMap } from './util'
+import { LLVMNamePointer } from '@/environment/LLVM-Environment'
 
 const X86_MASM_Math_Logic_Map = get_X86_MASM_Math_Logic_Map(dispatchExpressionCompile)
 const X86_MASM_SysCall_Map = get_X86_MASM_SysCall_Map(dispatchExpressionCompile)
@@ -227,6 +228,10 @@ export class CallExpression extends Tree {
             default: throw Error(`Unsupported callee type ${this.ast.callee.type} compile`);
         }
     }
+
+    llvmCompile(context: LLVMContext, destinatino:LLVMNamePointer) {
+
+    }
 }
 
 export class ExpressionStatement extends Tree {
@@ -246,6 +251,9 @@ export class ExpressionStatement extends Tree {
     }
     compile(context: X86Context, depth: number = 0) {
         return dispatchExpressionCompile(this.ast.expression, context, depth)
+    }
+    llvmCompile(context: LLVMContext, destination: LLVMNamePointer) {
+        return dispatchExpressionLLVMCompile(this.ast.expression, context, destination)
     }
 }
 
@@ -267,6 +275,18 @@ export function dispatchExpressionCompile(expression: ESTree.Expression | ESTree
         case NodeTypes.Literal: return new Literal(expression).compile(context, depth);
         case NodeTypes.BinaryExpression: return new BinaryExpression(expression).compile(context, depth);
         case NodeTypes.CallExpression: return new CallExpression(expression).compile(context, depth)
+        // case NodeTypes.AssignmentExpression: return new AssignmentExpression(expression).evaluate(context)
+        // case NodeTypes.UpdateExpression: return new UpdateExpression(expression).evaluate(context)
+        default: throw Error('Unsupported expression ' + expression)
+    }
+}
+
+export function dispatchExpressionLLVMCompile(expression: ESTree.Expression | ESTree.SpreadElement, context: LLVMContext, destination:LLVMNamePointer) {
+    switch (expression.type) {
+        // case NodeTypes.Identifier: return new Identifier(expression).compile(context, depth);
+        // case NodeTypes.Literal: return new Literal(expression).compile(context, depth);
+        // case NodeTypes.BinaryExpression: return new BinaryExpression(expression).compile(context, depth);
+        case NodeTypes.CallExpression: return new CallExpression(expression).llvmCompile(context, destination)
         // case NodeTypes.AssignmentExpression: return new AssignmentExpression(expression).evaluate(context)
         // case NodeTypes.UpdateExpression: return new UpdateExpression(expression).evaluate(context)
         default: throw Error('Unsupported expression ' + expression)
