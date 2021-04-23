@@ -1,20 +1,24 @@
-## Project Target
-
-A js compiler for js language targeting x86
-
-两套流程：
-Two sets of processes：
-
-1. js source code -> compile to ast -> run ast
-2. js source code -> compile to ast -> compile ast to assembly code -> compile assembly code to machine code -> run machine code
-
+# 工程目的
+一个编译器的学习工程
 
 用工具可以制造工具，被制造出来的工具将来又可以制造新的工具。
 编译器可以编译出新的编译器。
+
+# Project Target:
+Learning project for people who has interest in compiler
+
 Tools can be used to make tools, and the manufactured tools can be used to make new tools in the future.
 The compiler can compile a new compiler.
+## 知识范围
+* 高级语言(eg:javascript)如何编译成 x86 汇编
+* 高级语言(eg:javascript)如何编译成 llvm
+* 如何直接解释并运行高级语言(eg:javascript)
 
-### How to Use
+## what you will learn
+* how to compile js to x86 assemby
+* how to compile js to llvm
+* how to interpret js source code
+## How to Use
 
 ```ts
 import { 
@@ -77,6 +81,10 @@ npm install
 ```
 npm run jest
 ```
+
+## Detail
+
+Please reference jest test cases or you could make pr to add more info
 ## Refenrece
 
 * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)

@@ -135,6 +135,26 @@ main:
   CALL print
   MOV [RSP], RAX
 
+  POP RAX # Ignore non-final expression
+  PUSH 1
+  PUSH 2
+  CALL add
+  ADD RSP, 16
+  PUSH RAX
+
+  PUSH 3
+  PUSH 4
+  CALL add
+  ADD RSP, 16
+  PUSH RAX
+
+  CALL add
+  ADD RSP, 16
+  PUSH RAX
+
+  CALL print
+  MOV [RSP], RAX
+
   POP RAX
   POP RBP
 

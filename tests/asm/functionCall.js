@@ -11,13 +11,12 @@
 
 
 function add(a,b){
-    // print(a)
     return a+b;
 }
 
 function main(){
     print(add(add(1,2), 3))
-    // print(add(add(1,2), add(3,4)))
+    print(add(add(1,2), add(3,4)))
     // add(1,2)
     // add(2,3)
 }
