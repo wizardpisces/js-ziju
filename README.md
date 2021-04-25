@@ -1,23 +1,15 @@
-# 工程目的
-一个编译器的学习工程
+# 工程描述
+面向js语言的编译器，主要覆盖 LLVM IR ， X86汇编 ， 自我解释执行，以及更多。。。
 
 用工具可以制造工具，被制造出来的工具将来又可以制造新的工具。
 编译器可以编译出新的编译器。
 
-# Project Target:
-Learning project for people who has interest in compiler
+# Project Description
+A compiler for a javascript language targeting LLVM IR, x86 assembly , self interpreting and more to come...
 
 Tools can be used to make tools, and the manufactured tools can be used to make new tools in the future.
 The compiler can compile a new compiler.
-## 知识范围
-* 高级语言(eg:javascript)如何编译成 x86 汇编
-* 高级语言(eg:javascript)如何编译成 llvm
-* 如何直接解释并运行高级语言(eg:javascript)
 
-## what you will learn
-* how to compile js to x86 assemby
-* how to compile js to llvm
-* how to interpret js source code
 ## How to Use
 
 ```ts
