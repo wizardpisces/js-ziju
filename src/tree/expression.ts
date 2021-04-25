@@ -5,10 +5,12 @@ import { Context, LLVMContext, X86Context } from '../environment/context'
 import { Kind } from '../environment/Environment'
 import { get_X86_MASM_Math_Logic_Map, get_X86_MASM_SysCall_Map, identifierCompile } from '../backend/x86Assemble'
 import { opAcMap } from './util'
-import { LLVMNamePointer } from '@/environment/LLVM-Environment'
+import { LLVMNamePointer } from '../environment/LLVM-Environment'
+import { llvmIdentifierCompile, get_LLVM_SysCall_Map} from '../backend/llvmAssemble'
 
 const X86_MASM_Math_Logic_Map = get_X86_MASM_Math_Logic_Map(dispatchExpressionCompile)
 const X86_MASM_SysCall_Map = get_X86_MASM_SysCall_Map(dispatchExpressionCompile)
+const LLVM_SysCall_Map = get_LLVM_SysCall_Map(dispatchExpressionLLVMCompile)
 
 const nullFn = () => { console.log('Null function called!!!') }
 
@@ -33,10 +35,15 @@ export class Literal extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        let arg = this.ast.value
-        if (Number.isInteger(arg)) {
-            context.emit(depth, `PUSH ${arg}`);
-            return;
+        if (Number.isInteger(this.ast.value)) {
+            context.emit(depth, `PUSH ${this.ast.value}`);
+        }
+    }
+
+    llvmCompile(context: LLVMContext, useNamePointer: LLVMNamePointer) {
+        // If numeric literal, store to useNamePointer register by adding 0.
+        if (Number.isInteger(this.ast.value)) {
+            context.emit(1, `%${useNamePointer.value} = add i64 ${this.ast.value}, 0`);
         }
     }
 }
@@ -55,7 +62,11 @@ export class Identifier extends Tree {
     }
 
     compile(context: X86Context, depth: number = 0) {
-        identifierCompile(this.ast,context,depth)
+        identifierCompile(this.ast, context, depth)
+    }
+
+    llvmCompile(context: LLVMContext, useNamePointer: LLVMNamePointer) {
+        llvmIdentifierCompile(this.ast, context, useNamePointer)
     }
 }
 export class BinaryExpression extends Tree {
@@ -71,6 +82,29 @@ export class BinaryExpression extends Tree {
 
     compile(context: X86Context, depth: number = 0) {
         return X86_MASM_Math_Logic_Map[this.ast.operator](this.ast, context, depth)
+    }
+
+    llvmCompile(context: LLVMContext, resultNamePointer: LLVMNamePointer) {
+        let llvmOperatorMap = {
+            '+': 'add',
+            '-': 'sub',
+            '*': 'mul',
+            '/': 'udiv',
+            '%': 'urem',
+            '<': 'icmp slt',
+            '>': 'icmp sgt',
+            '=': 'icmp eq',
+        };
+
+        const arg1 = context.env.scope.symbol();
+        const arg2 = context.env.scope.symbol();
+
+        dispatchExpressionLLVMCompile(this.ast.left, context, arg1)
+        dispatchExpressionLLVMCompile(this.ast.right, context, arg2)
+
+        context.emit(
+            1,
+            `%${resultNamePointer.value} = ${llvmOperatorMap[this.ast.operator]} ${arg1.type} %${arg1.value}, %${arg2.value}`);
     }
 }
 
@@ -229,8 +263,52 @@ export class CallExpression extends Tree {
         }
     }
 
-    llvmCompile(context: LLVMContext, destinatino:LLVMNamePointer) {
+    llvmCompile(context: LLVMContext, resultNamePointer: LLVMNamePointer) {
+        /**
+         * Todos enable tail call optimization
+         * reference: https://llvm.org/docs/LangRef.html#call-instruction
+         */
+        const TAIL_CALL_ENABLED = true;
 
+        function llvmCompileCall(ast: ESTree.CallExpression, context: LLVMContext, retNamePointer: LLVMNamePointer) {
+            let args = ast.arguments,
+                fun = ast.callee.type === NodeTypes.Identifier ? ast.callee.name : 'undefined-function';
+
+            const funcNamePointer = context.env.scope.get(fun);
+            if (funcNamePointer) {
+                const safeArgs: string = args
+                    .map((expr) => {
+                        const useNamePointer: LLVMNamePointer = context.env.scope.symbol();
+                        dispatchExpressionLLVMCompile(expr, context, useNamePointer);
+                        return `${useNamePointer.type} %` + useNamePointer.value;
+                    })
+                    .join(', ');
+
+                const isTailCall = TAIL_CALL_ENABLED && context.env.tailCallTree.includes(funcNamePointer.value);
+                const maybeTail = isTailCall ? 'tail ' : '';
+
+                context.emit(
+                    1,
+                    `%${retNamePointer.value} = ${maybeTail}call ${funcNamePointer.type} @${funcNamePointer.value}(${safeArgs})`,
+                );
+                if (isTailCall) {
+                    context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
+                }
+            } else {
+                throw new Error('Attempt to call undefined function: ' + fun);
+            }
+        }
+
+        switch (this.ast.callee.type) {
+
+            case NodeTypes.Identifier:
+                return llvmCompileCall(this.ast, context, resultNamePointer);
+
+            case NodeTypes.MemberExpression:
+                return LLVM_SysCall_Map[new MemberExpression(this.ast.callee).toCode()](this.ast, context, resultNamePointer);;
+
+            default: throw Error(`Unsupported callee type ${this.ast.callee.type} compile`);
+        }
     }
 }
 
@@ -252,8 +330,8 @@ export class ExpressionStatement extends Tree {
     compile(context: X86Context, depth: number = 0) {
         return dispatchExpressionCompile(this.ast.expression, context, depth)
     }
-    llvmCompile(context: LLVMContext, destination: LLVMNamePointer) {
-        return dispatchExpressionLLVMCompile(this.ast.expression, context, destination)
+    llvmCompile(context: LLVMContext, namePointer: LLVMNamePointer) {
+        return dispatchExpressionLLVMCompile(this.ast.expression, context, namePointer)
     }
 }
 
@@ -281,12 +359,12 @@ export function dispatchExpressionCompile(expression: ESTree.Expression | ESTree
     }
 }
 
-export function dispatchExpressionLLVMCompile(expression: ESTree.Expression | ESTree.SpreadElement, context: LLVMContext, destination:LLVMNamePointer) {
+export function dispatchExpressionLLVMCompile(expression: ESTree.Expression | ESTree.SpreadElement, context: LLVMContext, namePointer: LLVMNamePointer) {
     switch (expression.type) {
-        // case NodeTypes.Identifier: return new Identifier(expression).compile(context, depth);
-        // case NodeTypes.Literal: return new Literal(expression).compile(context, depth);
-        // case NodeTypes.BinaryExpression: return new BinaryExpression(expression).compile(context, depth);
-        case NodeTypes.CallExpression: return new CallExpression(expression).llvmCompile(context, destination)
+        case NodeTypes.Identifier: return new Identifier(expression).llvmCompile(context, namePointer);
+        case NodeTypes.Literal: return new Literal(expression).llvmCompile(context, namePointer);
+        case NodeTypes.BinaryExpression: return new BinaryExpression(expression).llvmCompile(context, namePointer);
+        case NodeTypes.CallExpression: return new CallExpression(expression).llvmCompile(context, namePointer)
         // case NodeTypes.AssignmentExpression: return new AssignmentExpression(expression).evaluate(context)
         // case NodeTypes.UpdateExpression: return new UpdateExpression(expression).evaluate(context)
         default: throw Error('Unsupported expression ' + expression)

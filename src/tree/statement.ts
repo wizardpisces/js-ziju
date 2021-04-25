@@ -1,7 +1,7 @@
-import { Context, LLVMContext, X86Context } from '@/environment/context'
+import { Context, LLVMContext, X86Context } from '../environment/context'
 import ESTree from 'estree'
 import { NodeTypes } from './ast';
-import { BinaryExpression, dispatchExpressionCompile, dispatchExpressionEvaluation } from './expression';
+import { BinaryExpression, dispatchExpressionCompile, dispatchExpressionEvaluation, dispatchExpressionLLVMCompile } from './expression';
 import { Tree } from './Tree'
 import { ExpressionStatement } from './expression'
 import { VariableDeclaration } from './VariableDeclaration'
@@ -33,8 +33,21 @@ export class BlockStatement extends Tree {
             return result
         })
     }
-    llvmCompile(context: LLVMContext, destination: LLVMNamePointer) {
-        return this.ast.body.every((statement: ESTree.Statement) => dispathStatementLLVMCompile(statement, context, destination))
+    llvmCompile(context: LLVMContext, namePointer: LLVMNamePointer) {
+        return this.ast.body.every((statement: ESTree.Statement, i: number) => {
+            const isLast = this.ast.body.length - 1 === i;
+
+            /**
+             * Todos: determine whether it is function definition last sentence
+             * only affect this layer of tailCallTree
+             */
+            const contextClone = context.env.copy();
+            contextClone.scope = context.env.scope;
+            if (!isLast || statement.type!== NodeTypes.ReturnStatement) {
+                contextClone.tailCallTree = [];
+            }
+            return dispathStatementLLVMCompile(statement, context, namePointer)
+        })
     }
 }
 export class ReturnStatement extends Tree {
@@ -66,8 +79,22 @@ export class ReturnStatement extends Tree {
         return false;
     }
 
-    llvmCompile(context:LLVMContext, destination:LLVMNamePointer){
-        context.emit(1, `ret ${destination.type} %${destination.value}`);
+    llvmCompile(context:LLVMContext, retNamePointer:LLVMNamePointer){
+        /**
+         * Todos
+         * js ret could contain any object
+         * here we only considered simple expression yet
+         */
+
+        if (this.ast.argument) {
+            if(this.ast.argument.type !== NodeTypes.CallExpression){
+                context.env.tailCallTree = []
+            }
+            dispatchExpressionLLVMCompile(this.ast.argument, context, retNamePointer)
+            context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
+        }else{
+            context.emit(1, `ret void`);
+        }    
 
         return false;
     }
@@ -148,6 +175,54 @@ export class IfStatement extends Tree {
         context.emit(depth, '# End if');
 
         return true
+    }
+
+    llvmCompile(context:LLVMContext,namePointer:LLVMNamePointer){
+        const { test, consequent, alternate } = this.ast
+
+        const testVariable = context.env.scope.symbol();
+        const result = context.env.scope.symbol('ifresult');
+        // Space for result
+        result.type = 'i64*';
+        context.emit(1, `%${result.value} = alloca i64, align 4`);
+        // Compile expression and branch
+        dispatchExpressionLLVMCompile(test, context, testVariable);
+        const trueLabel = context.env.scope.symbol('iftrue').value;
+        const falseLabel = context.env.scope.symbol('iffalse').value;
+        context.emit(
+            1,
+            `br i1 %${testVariable.value}, label %${trueLabel}, label %${falseLabel}`,
+        );
+
+        // Compile true section
+        context.emit(0, trueLabel + ':');
+        const trueTempNamePointer = context.env.scope.symbol();
+        dispathStatementLLVMCompile(consequent, context, trueTempNamePointer);
+        context.emit(
+            1,
+            `store ${trueTempNamePointer.type} %${trueTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
+        );
+        const endLabel = context.env.scope.symbol('ifend').value;
+        context.emit(1, 'br label %' + endLabel);
+        context.emit(0, falseLabel + ':');
+        if (alternate) {
+            const elseTempNamePointer = context.env.scope.symbol();
+            dispathStatementLLVMCompile(alternate, context, elseTempNamePointer);
+            context.emit(
+                1,
+                `store ${elseTempNamePointer.type} %${elseTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
+            );
+        }
+        context.emit(1, 'br label %' + endLabel);
+
+        // Compile cleanup
+        context.emit(0, endLabel + ':');
+        context.emit(
+            1,
+            `%${namePointer.value} = load ${namePointer.type}, ${result.type} %${result.value}, align 4`,
+        );
+
+        return true;
     }
 }
 
@@ -231,19 +306,18 @@ export class FunctionDeclaration extends Tree {
     }
 
     llvmCompile(context: LLVMContext, _: LLVMNamePointer) {
-        let { env } = context,
-            { body, id, params } = this.ast,
+        let { body, id, params } = this.ast,
             fn: LLVMNamePointer;
 
         // Add this function to outer context.scope
         if (id) {
-            fn = env.scope.register(id.name);
+            fn = context.env.scope.register(id.name);
         } else {
             throw Error('Do not support function name null yet!!')
         }
 
         // Copy outer env.scope so parameter mappings aren't exposed in outer env.scope.
-        const childContext = env.copy();
+        const childContext = context.env.copy();
         childContext.tailCallTree.push(fn.value);
 
         const safeParams: LLVMNamePointer[] = params.map((param: ESTree.Pattern) => {
@@ -263,9 +337,11 @@ export class FunctionDeclaration extends Tree {
         );
 
         // Pass childContext in for reference when body is compiled.
-        const ret = childContext.scope.symbol();
+        const resultNamePointer:LLVMNamePointer = childContext.scope.symbol();
 
-        new BlockStatement(body).llvmCompile({ ...context, env: childContext }, ret)
+        new BlockStatement(body).llvmCompile({ ...context, env: childContext }, resultNamePointer)
+
+        // context.emit(1, `ret ${resultNamePointer.type} %${resultNamePointer.value}`); // moved to ReturnStatement compile
 
         context.emit(0, '}\n');
     }
@@ -309,16 +385,16 @@ export function dispatchStatementCompile(statement: ESTree.Statement, context: X
     return true;
 }
 
-export function dispathStatementLLVMCompile(statement: ESTree.Statement, context: LLVMContext, destination: LLVMNamePointer): boolean {
+export function dispathStatementLLVMCompile(statement: ESTree.Statement, context: LLVMContext, namePointer: LLVMNamePointer): boolean {
 
     switch (statement.type) {
-        case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).llvmCompile(context, destination); break;
+        case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).llvmCompile(context, namePointer); break;
         // case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).compile(context, depth); break;
-        case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).llvmCompile(context, destination); break;
+        case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).llvmCompile(context, namePointer); break;
         // case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
         // case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
-        // case NodeTypes.IfStatement: return new IfStatement(statement).compile(context, depth);
-        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).llvmCompile(context, destination);
+        case NodeTypes.IfStatement: return new IfStatement(statement).llvmCompile(context, namePointer);
+        case NodeTypes.ReturnStatement: return new ReturnStatement(statement).llvmCompile(context, namePointer);
         // case NodeTypes.BlockStatement: return new BlockStatement(statement).compile(context, depth);
         default: throw Error('Unknown statement ' + statement.type)
     }

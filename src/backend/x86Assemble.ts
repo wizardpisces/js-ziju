@@ -1,21 +1,9 @@
-import os from 'os';
 import ESTree from 'estree'
-import { X86Context } from "@/environment/context";
-import { X86NamePointer } from '@/environment/X86-Environment';
-export * from '@/environment/X86-Environment'
-export type Platform = 'darwin' | 'linux'
-export type SystemCall = { 'write': number, 'exit': number }
+import { X86Context } from "../environment/context";
+import { X86NamePointer } from '../environment/X86-Environment';
+import { SYSCALL_MAP, SystemCall } from './common'
 
-export const SYSCALL_MAP: SystemCall = {
-    darwin: {
-        exit: 0x2000001,
-        write: 0x2000004,
-    },
-    linux: {
-        exit: 60,
-        write: 1,
-    }
-}[os.platform() as Platform];
+export * from '../environment/X86-Environment'
 
 export function emitPrefix(context: X86Context) {
     context.emit(1, '.global _main\n');
@@ -31,10 +19,10 @@ export function emitPostfix(context: X86Context) {
     context.emit(1, 'SYSCALL');
 }
 
-
-export function identifierCompile(ast:ESTree.Identifier, context: X86Context, depth: number) {
+export function identifierCompile(ast: ESTree.Identifier, context: X86Context, depth: number) {
     const { name } = ast
     // support kernel print starts with $$ is address 
+    // Is a reference, push onto the stack and return its address
     if ((name).startsWith('$$')) {
         const { offset } = context.env.lookup(name) as X86NamePointer;
         // Copy the frame pointer so we can return an offset from it
