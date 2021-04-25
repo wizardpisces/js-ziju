@@ -389,13 +389,12 @@ export function dispathStatementLLVMCompile(statement: ESTree.Statement, context
 
     switch (statement.type) {
         case NodeTypes.ExpressionStatement: new ExpressionStatement(statement).llvmCompile(context, namePointer); break;
-        // case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).compile(context, depth); break;
         case NodeTypes.FunctionDeclaration: new FunctionDeclaration(statement).llvmCompile(context, namePointer); break;
         // case NodeTypes.VariableDeclaration: new VariableDeclaration(statement).evaluate(context); break;
         // case NodeTypes.WhileStatement: return new WhileStatement(statement).evaluate(context)
         case NodeTypes.IfStatement: return new IfStatement(statement).llvmCompile(context, namePointer);
         case NodeTypes.ReturnStatement: return new ReturnStatement(statement).llvmCompile(context, namePointer);
-        // case NodeTypes.BlockStatement: return new BlockStatement(statement).compile(context, depth);
+        case NodeTypes.BlockStatement: return new BlockStatement(statement).llvmCompile(context, namePointer);
         default: throw Error('Unknown statement ' + statement.type)
     }
 
