@@ -38,6 +38,7 @@ export default class Scope {
 }
 export class LLVMEnvironment {
     scope!: Scope
+    tail_call_enabled:boolean = false
     tailCallTree: string[]
     constructor() {
         this.scope = new Scope();

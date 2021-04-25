@@ -18,8 +18,7 @@ iftrue11:
   %sym15 = add i64 %n, 0
   %sym16 = add i64 10, 0
   %sym14 = udiv i64 %sym15, %sym16
-  %sym13 = tail call i64 @printHelper(i64 %sym14)
-  ret i64 %sym13
+  %sym13 = call i64 @printHelper(i64 %sym14)
   store i64 %sym13, i64* %ifresult8, align 4
   br label %ifend17
 iffalse12:

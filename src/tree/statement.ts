@@ -89,8 +89,17 @@ export class ReturnStatement extends Tree {
         if (this.ast.argument) {
             if(this.ast.argument.type !== NodeTypes.CallExpression){
                 context.env.tailCallTree = []
+            }else{
+                /**
+                 * set tail_call_enabled = true
+                 * only when encounter return CallExpression
+                 */
+                context.env.tail_call_enabled = true;
             }
+
             dispatchExpressionLLVMCompile(this.ast.argument, context, retNamePointer)
+            context.env.tail_call_enabled = false;
+
             context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
         }else{
             context.emit(1, `ret void`);

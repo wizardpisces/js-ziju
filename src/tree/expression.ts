@@ -268,7 +268,6 @@ export class CallExpression extends Tree {
          * Todos enable tail call optimization
          * reference: https://llvm.org/docs/LangRef.html#call-instruction
          */
-        const TAIL_CALL_ENABLED = true;
 
         function llvmCompileCall(ast: ESTree.CallExpression, context: LLVMContext, retNamePointer: LLVMNamePointer) {
             let args = ast.arguments,
@@ -284,16 +283,16 @@ export class CallExpression extends Tree {
                     })
                     .join(', ');
 
-                const isTailCall = TAIL_CALL_ENABLED && context.env.tailCallTree.includes(funcNamePointer.value);
+                const isTailCall = context.env.tail_call_enabled && context.env.tailCallTree.includes(funcNamePointer.value);
                 const maybeTail = isTailCall ? 'tail ' : '';
 
                 context.emit(
                     1,
                     `%${retNamePointer.value} = ${maybeTail}call ${funcNamePointer.type} @${funcNamePointer.value}(${safeArgs})`,
                 );
-                if (isTailCall) {
-                    context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
-                }
+                // if (isTailCall) {
+                //     context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
+                // }
             } else {
                 throw new Error('Attempt to call undefined function: ' + fun);
             }
