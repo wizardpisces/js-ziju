@@ -23,10 +23,6 @@ export function build(program='',name='',buildDir = path.join(__dirname,'./asm-d
 
 export function buildLLVM(program = '', name = '', buildDir = path.join(__dirname, './llvm-dist')) {
     fs.writeFileSync(`${buildDir}/${name}.ll`, program);
-    cp.execSync(`llc --x86-asm-syntax=intel -o ${buildDir}/${name}.s ${buildDir}/${name}.ll`);
-    cp.execSync(`gcc -o ${buildDir}/${name} -masm=intel ${buildDir}/${name}.s`);
-
-    cp.execSync(
-        `gcc -mstackrealign -masm=intel -o ${buildDir}/${name} ${buildDir}/${name}.asm`,
-    );
+    cp.execSync(`llc --x86-asm-syntax=intel -o ${buildDir}/${name}.asm ${buildDir}/${name}.ll`);
+    cp.execSync(`gcc -masm=intel -o ${buildDir}/${name} ${buildDir}/${name}.asm`);
 }

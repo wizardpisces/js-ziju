@@ -10,16 +10,17 @@ A compiler for a javascript language targeting LLVM IR, x86 assembly , self inte
 Tools can be used to make tools, and the manufactured tools can be used to make new tools in the future.
 The compiler can compile a new compiler.
 
-## How to Use
+## Examples
+
+### Interpret
 
 ```ts
 import { 
-    CodeGen,
     Interpreter 
 } from './src'
 
 
-let interpretJsCode = `
+let code = `
 console.log('=== MemberExpression evaluated =========');
 function fn(){
     console.log('=== FunctionDeclaration evaluated =====')
@@ -27,42 +28,256 @@ function fn(){
 fn()
 `
 
+new Interpreter(code).interpret()
 
-console.log(new CodeGen('console.log(1);').toCode());
-/* output: 
-* console.log(1)
-*/
-
-new Interpreter(interpretJsCode).interpret()
 /* output:
 * === MemberExpression evaluated =========
 * === FunctionDeclaration evaluated =====
 */
+```
+### X86 MASM Assembly
 
-//example: fibonacci
+```js
+import {Assembler} from './src'
 
-interpretJsCode = `
-function fibonacci(n) {
-    let f0 = 0,
-        f1 = 1,
-        temp = f1,
-        i = 0;
-
-    while (i < n) {
-        console.log(f1)
-        temp = f1;
-        f1 = f1 + f0;
-        f0 = temp;
-        i++;
-    }
-
+let kernalCode = `
+function printChar($$c){
+    console.log(1,$$c,1)
 }
-fibonacci(5)
-`
-new Interpreter(interpretJsCode).interpret()
-/* output:
-* 1 1 2 3 5
-*/
+
+function printHelper(n) {
+    if(n>9){
+        printHelper(n / 10)
+    }
+    // 48 is the ASCII code for '0'
+    printChar(48 + n % 10);
+}
+
+function print(n){
+    printHelper(n)
+    printChar(10); // 换行
+}`
+
+let code = `
+function main(){
+    print(231)
+    print(4)
+}`
+
+let result = new Assembler(kernal+code).compile()
+
+```
+result.assembly
+```assembly
+  .global _main
+
+  .text
+
+printChar:
+  PUSH RBP
+  MOV RBP, RSP
+
+  PUSH 1
+  MOV RAX, RBP
+  ADD RAX, 16 # $$c
+  PUSH RAX
+  PUSH 1
+  POP RDX
+  POP RSI
+  POP RDI
+  MOV RAX, 33554436
+  SYSCALL
+  PUSH RAX
+
+  POP RAX
+  POP RBP
+
+  RET
+
+printHelper:
+  PUSH RBP
+  MOV RBP, RSP
+
+  # If
+    # >
+    PUSH [RBP + 16] # n
+    PUSH 9
+    POP RAX
+    CMP [RSP], RAX
+    MOV RAX, 0
+    MOV DWORD PTR [RSP], 1
+    CMOVA RAX, [RSP]
+    MOV [RSP], RAX
+    # End >
+
+  POP RAX
+  TEST RAX, RAX
+  JZ .else_branch1
+
+  # If then
+    # DIV
+    PUSH [RBP + 16] # n
+    PUSH 10
+    POP RAX
+    XCHG [RSP], RAX
+    XOR RDX, RDX
+    DIV QWORD PTR [RSP]
+    MOV [RSP], RAX
+  CALL printHelper
+  MOV [RSP], RAX
+
+  JMP .after_else_branch1
+
+  # If else
+.else_branch1:
+  PUSH 0 # Null else branch
+.after_else_branch1:
+  # End if
+  POP RAX # Ignore non-final expression
+    # ADD
+    PUSH 48
+      # DIV
+      PUSH [RBP + 16] # n
+      PUSH 10
+      POP RAX
+      XCHG [RSP], RAX
+      XOR RDX, RDX
+      DIV QWORD PTR [RSP]
+      MOV [RSP], RDX
+    POP RAX
+    ADD [RSP], RAX
+    # End ADD
+  CALL printChar
+  MOV [RSP], RAX
+
+  POP RAX
+  POP RBP
+
+  RET
+
+print:
+  PUSH RBP
+  MOV RBP, RSP
+
+  PUSH [RBP + 16] # n
+  CALL printHelper
+  MOV [RSP], RAX
+
+  POP RAX # Ignore non-final expression
+  PUSH 10
+  CALL printChar
+  MOV [RSP], RAX
+
+  POP RAX
+  POP RBP
+
+  RET
+
+main:
+  PUSH RBP
+  MOV RBP, RSP
+
+  PUSH 231
+  CALL print
+  MOV [RSP], RAX
+
+  POP RAX # Ignore non-final expression
+  PUSH 4
+  CALL print
+  MOV [RSP], RAX
+
+  POP RAX
+  POP RBP
+
+  RET
+
+_main:
+  CALL main
+  MOV RDI, RAX
+  MOV RAX, 33554433
+  SYSCALL
+
+```
+
+### LLVM
+```js
+import {Assembler} from './src'
+
+let kernalCode = `
+function printChar($$c){
+    console.log(1,$$c,1)
+}
+
+function printHelper(n) {
+    if(n>9){
+        printHelper(n / 10)
+    }
+    // 48 is the ASCII code for '0'
+    printChar(48 + n % 10);
+}
+
+function print(n){
+    printHelper(n)
+    printChar(10); // 换行
+}`
+
+let code = `
+function main(){
+    print(311)
+    // print(4)
+}`
+
+let result = new Assembler(kernal+code).llvmCompile()
+
+```
+result.assembly
+```llvm
+define i64 @printChar(i64 %$$c) {
+  %sym5 = add i64 1, 0
+  %sym7 = add i64 %$$c, 0
+  %sym6 = alloca i64, align 4
+  store i64 %sym7, i64* %sym6, align 4
+  %sym8 = add i64 1, 0
+  %sym9 = add i64 33554436, 0
+  %sym4 = call i64 asm sideeffect "syscall", "=r,{rax},{rdi},{rsi},{rdx},~{dirflag},~{fpsr},~{flags}" (i64 %sym9, i64 %sym5, i64* %sym6, i64 %sym8)
+}
+
+define i64 @printHelper(i64 %n) {
+  %ifresult8 = alloca i64, align 4
+  %sym9 = add i64 %n, 0
+  %sym10 = add i64 9, 0
+  %sym7 = icmp sgt i64 %sym9, %sym10
+  br i1 %sym7, label %iftrue11, label %iffalse12
+iftrue11:
+  %sym15 = add i64 %n, 0
+  %sym16 = add i64 10, 0
+  %sym14 = udiv i64 %sym15, %sym16
+  %sym13 = call i64 @printHelper(i64 %sym14)
+  store i64 %sym13, i64* %ifresult8, align 4
+  br label %ifend17
+iffalse12:
+  br label %ifend17
+ifend17:
+  %sym6 = load i64, i64* %ifresult8, align 4
+  %sym19 = add i64 48, 0
+  %sym21 = add i64 %n, 0
+  %sym22 = add i64 10, 0
+  %sym20 = urem i64 %sym21, %sym22
+  %sym18 = add i64 %sym19, %sym20
+  %sym6 = call i64 @printChar(i64 %sym18)
+}
+
+define i64 @print(i64 %n) {
+  %sym9 = add i64 %n, 0
+  %sym8 = call i64 @printHelper(i64 %sym9)
+  %sym10 = add i64 10, 0
+  %sym8 = call i64 @printChar(i64 %sym10)
+}
+
+define i64 @main() {
+  %sym10 = add i64 311, 0
+  %sym9 = call i64 @print(i64 %sym10)
+}
 ```
 
 ### How to test (support node>=12)
@@ -76,7 +291,7 @@ npm run jest
 
 ## Detail
 
-Please reference jest test cases or you could make pr to add more info
+Please result could reference test cases
 ## Refenrece
 
 * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
