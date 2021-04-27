@@ -1,22 +1,45 @@
-export type LLVMNamePointer = { type: string, value: string };
+export type LLVMNamePointer = { type: 'i64' | 'void' | 'i64*' | string, value: string };
 type Locals = Record<string, LLVMNamePointer>;
 
+export type LLVMNamePointerPartial = Partial<LLVMNamePointer> | string
 export default class Scope {
     locals: Locals = {}
     constructor() {
         this.locals = {};
     }
 
-    symbol(prefix = 'sym'): LLVMNamePointer {
+    symbol(prefix: string | LLVMNamePointerPartial = 'sym'): LLVMNamePointer {
         const nth = Object.keys(this.locals).length + 1;
-        return this.register(prefix + nth);
+        if (typeof prefix === 'string') {
+            return this.register(prefix + nth);
+        } else {
+            if (!prefix.value) {
+                prefix.value = 'sym'
+            }
+
+            prefix.value = prefix.value + nth
+            return this.register(prefix)
+        }
     }
 
     get(name: string): LLVMNamePointer {
         return this.locals[name];
     }
 
-    register(name: string): LLVMNamePointer {
+    register(param: string | LLVMNamePointerPartial): LLVMNamePointer {
+        let type:LLVMNamePointer['type'] = 'i64', name = '';
+
+        if (typeof param === 'object') {
+            name = param.value ? param.value : name;
+            type = param.type ? param.type : type
+        } else if(typeof param === 'string'){
+            name = param
+        }
+
+        if(name === ''){
+            name ='sym'
+        }
+
         let safeName: string = name.replace('-', '_');
         let n = 1;
         while (this.locals[safeName]) {
@@ -25,7 +48,7 @@ export default class Scope {
 
         this.locals[name] = {
             value: safeName,
-            type: 'i64',
+            type: type,
         };
         return this.locals[name];
     }
@@ -38,7 +61,7 @@ export default class Scope {
 }
 export class LLVMEnvironment {
     scope!: Scope
-    tail_call_enabled:boolean = false
+    tail_call_enabled: boolean = false
     tailCallTree: string[]
     constructor() {
         this.scope = new Scope();

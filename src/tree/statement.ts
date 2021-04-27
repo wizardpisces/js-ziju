@@ -43,7 +43,7 @@ export class BlockStatement extends Tree {
              */
             const contextClone = context.env.copy();
             contextClone.scope = context.env.scope;
-            if (!isLast || statement.type!== NodeTypes.ReturnStatement) {
+            if (!isLast || statement.type !== NodeTypes.ReturnStatement) {
                 contextClone.tailCallTree = [];
             }
             return dispathStatementLLVMCompile(statement, context, namePointer)
@@ -79,7 +79,7 @@ export class ReturnStatement extends Tree {
         return false;
     }
 
-    llvmCompile(context:LLVMContext, retNamePointer:LLVMNamePointer){
+    llvmCompile(context: LLVMContext, retNamePointer: LLVMNamePointer) {
         /**
          * Todos
          * js ret could contain any object
@@ -87,9 +87,9 @@ export class ReturnStatement extends Tree {
          */
 
         if (this.ast.argument) {
-            if(this.ast.argument.type !== NodeTypes.CallExpression){
+            if (this.ast.argument.type !== NodeTypes.CallExpression) {
                 context.env.tailCallTree = []
-            }else{
+            } else {
                 /**
                  * set tail_call_enabled = true
                  * only when encounter return CallExpression
@@ -101,9 +101,9 @@ export class ReturnStatement extends Tree {
             context.env.tail_call_enabled = false;
 
             context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
-        }else{
+        } else {
             context.emit(1, `ret void`);
-        }    
+        }
 
         return false;
     }
@@ -186,7 +186,7 @@ export class IfStatement extends Tree {
         return true
     }
 
-    llvmCompile(context:LLVMContext,namePointer:LLVMNamePointer){
+    llvmCompile(context: LLVMContext, namePointer: LLVMNamePointer) {
         const { test, consequent, alternate } = this.ast
 
         const testVariable = context.env.scope.symbol();
@@ -207,17 +207,19 @@ export class IfStatement extends Tree {
         context.emit(0, trueLabel + ':');
         const trueTempNamePointer = context.env.scope.symbol();
         dispathStatementLLVMCompile(consequent, context, trueTempNamePointer);
-        context.emit(
+
+        trueTempNamePointer.type!=='void' && context.emit(
             1,
             `store ${trueTempNamePointer.type} %${trueTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
         );
+
         const endLabel = context.env.scope.symbol('ifend').value;
         context.emit(1, 'br label %' + endLabel);
         context.emit(0, falseLabel + ':');
         if (alternate) {
             const elseTempNamePointer = context.env.scope.symbol();
             dispathStatementLLVMCompile(alternate, context, elseTempNamePointer);
-            context.emit(
+            elseTempNamePointer.type!=='void' && context.emit(
                 1,
                 `store ${elseTempNamePointer.type} %${elseTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
             );
@@ -316,23 +318,31 @@ export class FunctionDeclaration extends Tree {
 
     llvmCompile(context: LLVMContext, _: LLVMNamePointer) {
         let { body, id, params } = this.ast,
-            fn: LLVMNamePointer;
-
+        fn: LLVMNamePointer,
+            lastStatement = body.body[body.body.length - 1],
+            hasReturnStatement = lastStatement && body.body.length !== 0 && lastStatement.type === NodeTypes.ReturnStatement,
+            shouldReturnVoid = body.body.length === 0 || !hasReturnStatement || hasReturnStatement && !(lastStatement as ESTree.ReturnStatement).argument;
         // Add this function to outer context.scope
         if (id) {
-            fn = context.env.scope.register(id.name);
+            fn = context.env.scope.register({
+                value:id.name,
+                type: shouldReturnVoid ? 'void' : 'i64'
+            });
         } else {
             throw Error('Do not support function name null yet!!')
         }
 
         // Copy outer env.scope so parameter mappings aren't exposed in outer env.scope.
-        const childContext = context.env.copy();
-        childContext.tailCallTree.push(fn.value);
+        const childEnv = context.env.copy();
+        // Pass childEnv in for reference when body is compiled.
+        const resultNamePointer: LLVMNamePointer = childEnv.scope.symbol()
+
+        childEnv.tailCallTree.push(fn.value);
 
         const safeParams: LLVMNamePointer[] = params.map((param: ESTree.Pattern) => {
             if (param.type === NodeTypes.Identifier) {
                 // Store parameter mapped to associated local
-                return childContext.scope.register(param.name);
+                return childEnv.scope.register(param.name);
             } else {
                 throw Error('[llvmCompile]: Unknown param type ' + param.type)
             }
@@ -340,17 +350,14 @@ export class FunctionDeclaration extends Tree {
 
         context.emit(
             0,
-            `define i64 @${fn.value}(${safeParams
+            `define ${fn.type} @${fn.value}(${safeParams
                 .map((p: LLVMNamePointer) => `${p.type} %${p.value}`)
                 .join(', ')}) {`,
         );
 
-        // Pass childContext in for reference when body is compiled.
-        const resultNamePointer:LLVMNamePointer = childContext.scope.symbol();
+        new BlockStatement(body).llvmCompile({ ...context, env: childEnv }, resultNamePointer)
 
-        new BlockStatement(body).llvmCompile({ ...context, env: childContext }, resultNamePointer)
-
-        // context.emit(1, `ret ${resultNamePointer.type} %${resultNamePointer.value}`); // moved to ReturnStatement compile
+        !hasReturnStatement && context.emit(1, `ret void`); // moved to ReturnStatement compile
 
         context.emit(0, '}\n');
     }

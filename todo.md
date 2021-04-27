@@ -1,6 +1,8 @@
 # Todos
 
-* tests/asm/fib 函数里面包含多条 Statement 生成的 x86 asm会运行出问题
+* compile to c++/v8
+    * reference [jsc](https://github.com/eatonphil/jsc)
+* js emulator in js (go-amd64-emulator)[https://github.com/eatonphil/go-amd64-emulator/tree/944b590c4eee7ad726169096e2131a3f6e9808d9]
 * compile to LLVM IR
     * (Tail call optimization)[https://javascript.plainenglish.io/javascript-optimizations-tail-call-optimization-tco-471b4f8e4f37]
     * string?
@@ -8,15 +10,17 @@
     * class ?
     * Self-hosting?
     * Foreign function calls?
-* compile to c++/v8
-    * reference [jsc](https://github.com/eatonphil/jsc)
 * compile to NASM and implement vm(reference [a-virtual-machine](http://craftinginterpreters.com/a-virtual-machine.html)) to run NASM
 
-# Optimize
+## Bugs
+
+* tests/asm/fib 函数里面包含多条 Statement 生成的 x86 asm会运行出问题
+
+## Optimize
 
 * use traverse visitor mode (reference here)[https://raw.githubusercontent.com/wizardpisces/tiny-sass-compiler/master/src/genCodeVisitor.ts] to refactor compile to code , use estree-walker
 
-## 思考：
+# 思考：
 ~~并不是所有的生成code都适合使用visitor模式来做，如果同一类型的expression在不同语境下生成不同code则不适合，例如: 
 在生成 x86 Assembly 的过程中，同样的类型Identifier，在 CallExpression 是callee.type的类型，那么会触发普通的函数执行编译，但是在普通语境下，则是 push Stack操作~~
 

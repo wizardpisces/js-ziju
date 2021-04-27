@@ -71,9 +71,11 @@ export function get_LLVM_SysCall_Map(dispatchExpressionLLVMCompile: dispatchExpr
             const params = args.map((_, i) => `{${regs[i]}}`).join(',');
             const idTmp = context.env.scope.symbol().value;
             context.emit(1, `%${idTmp} = add i64 ${SYSCALL_MAP[key as keyof SystemCall]}, 0`);
+            
+            let assign = namePointer.type !== 'void' ? `%${namePointer.value} = ` : ' '
             context.emit(
                 1,
-                `%${namePointer.value} = call ${namePointer.type} asm sideeffect "syscall", "=r,{rax},${params},~{dirflag},~{fpsr},~{flags}" (i64 %${idTmp}, ${argTmps})`
+                `${assign}call ${namePointer.type} asm sideeffect "syscall", "=r,{rax},${params},~{dirflag},~{fpsr},~{flags}" (i64 %${idTmp}, ${argTmps})`
             );
         
         };

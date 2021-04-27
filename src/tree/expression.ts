@@ -286,9 +286,10 @@ export class CallExpression extends Tree {
                 const isTailCall = context.env.tail_call_enabled && context.env.tailCallTree.includes(funcNamePointer.value);
                 const maybeTail = isTailCall ? 'tail ' : '';
 
+                let assign = funcNamePointer.type !== 'void' ? `%${funcNamePointer.value} = ` : ' '
                 context.emit(
                     1,
-                    `%${retNamePointer.value} = ${maybeTail}call ${funcNamePointer.type} @${funcNamePointer.value}(${safeArgs})`,
+                    `${assign}${maybeTail}call ${funcNamePointer.type} @${funcNamePointer.value}(${safeArgs})`,
                 );
                 // if (isTailCall) {
                 //     context.emit(1, `ret ${retNamePointer.type} %${retNamePointer.value}`);
