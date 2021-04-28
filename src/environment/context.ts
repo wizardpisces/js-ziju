@@ -20,16 +20,12 @@ export interface LLVMContext extends BaseContext {
     emit(depth: number, code: string): void
 }
 
-const EnvironmentTypeMap = {
-    interpret: new Environment(null),
-    x86: new X86Environment(),
-    llvm: new LLVMEnvironment()
-}
+type EnvType = 'interpret' | 'x86' | 'llvm'
 
-function baseCreateContext(type: keyof typeof EnvironmentTypeMap = 'interpret'): X86Context | Context | LLVMContext {
+function baseCreateContext(type: EnvType = 'interpret'): X86Context | Context | LLVMContext {
     if (type === 'x86') {
         let context: X86Context = {
-            env: EnvironmentTypeMap[type],
+            env: new X86Environment(),
             assembly: '',
             emit(depth = 0, code: string) {
                 context.assembly += '  '.repeat(depth) + code + '\n';
@@ -38,7 +34,7 @@ function baseCreateContext(type: keyof typeof EnvironmentTypeMap = 'interpret'):
         return context
     } else if (type === 'llvm') {
         let context: LLVMContext = {
-            env: EnvironmentTypeMap[type],
+            env: new LLVMEnvironment(),
             assembly: '',
             emit(depth = 0, code: string) {
                 context.assembly += '  '.repeat(depth) + code + '\n';
@@ -47,7 +43,7 @@ function baseCreateContext(type: keyof typeof EnvironmentTypeMap = 'interpret'):
         return context
     } else{ // type === interpret
         let context: Context = {
-            env: EnvironmentTypeMap[type]
+            env: new Environment(null)
         }
         return context
     }
