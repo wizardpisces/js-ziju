@@ -22,8 +22,7 @@ iftrue11:
   %sym15 = add i64 %n, 0
   %sym16 = add i64 10, 0
   %sym14 = udiv i64 %sym15, %sym16
-   call void @printHelper(i64 %sym14)
-  store i64 %sym13, i64* %ifresult8, align 4
+  call void @printHelper(i64 %sym14)
   br label %ifend17
 iffalse12:
   br label %ifend17
@@ -34,21 +33,21 @@ ifend17:
   %sym22 = add i64 10, 0
   %sym20 = urem i64 %sym21, %sym22
   %sym18 = add i64 %sym19, %sym20
-   call void @printChar(i64 %sym18)
+  call void @printChar(i64 %sym18)
   ret void
 }
 
 define void @print(i64 %n) {
   %sym9 = add i64 %n, 0
-   call void @printHelper(i64 %sym9)
+  call void @printHelper(i64 %sym9)
   %sym10 = add i64 10, 0
-   call void @printChar(i64 %sym10)
+  call void @printChar(i64 %sym10)
   ret void
 }
 
 define void @main() {
   %sym10 = add i64 311, 0
-   call void @print(i64 %sym10)
+  call void @print(i64 %sym10)
   ret void
 }
 

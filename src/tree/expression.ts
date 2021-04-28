@@ -225,7 +225,7 @@ export class CallExpression extends Tree {
             let args = ast.arguments,
                 scope = context.env,
                 fun = ast.callee.type === NodeTypes.Identifier ? ast.callee.name : 'undefined-function';
-            // Compile registers and store on the stack
+            // Compile registers and save on the stack
             args.map((arg) => dispatchExpressionCompile(arg, context, depth));
 
             const fn = scope.lookup(fun);
@@ -269,7 +269,7 @@ export class CallExpression extends Tree {
          * reference: https://llvm.org/docs/LangRef.html#call-instruction
          */
 
-        function llvmCompileCall(ast: ESTree.CallExpression, context: LLVMContext, retNamePointer: LLVMNamePointer) {
+        function llvmCompileCall(ast: ESTree.CallExpression, context: LLVMContext, tempNamePointer: LLVMNamePointer) {
             let args = ast.arguments,
                 fun = ast.callee.type === NodeTypes.Identifier ? ast.callee.name : 'undefined-function';
 
@@ -285,8 +285,13 @@ export class CallExpression extends Tree {
 
                 const isTailCall = context.env.tail_call_enabled && context.env.tailCallTree.includes(funcNamePointer.value);
                 const maybeTail = isTailCall ? 'tail ' : '';
+                
+                let assign = funcNamePointer.type !== 'void' ? `%${tempNamePointer.value} = ` : ''
+                
+                if(!assign){
+                    tempNamePointer.type = 'void'
+                }
 
-                let assign = funcNamePointer.type !== 'void' ? `%${funcNamePointer.value} = ` : ' '
                 context.emit(
                     1,
                     `${assign}${maybeTail}call ${funcNamePointer.type} @${funcNamePointer.value}(${safeArgs})`,

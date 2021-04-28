@@ -207,8 +207,10 @@ export class IfStatement extends Tree {
         context.emit(0, trueLabel + ':');
         const trueTempNamePointer = context.env.scope.symbol();
         dispathStatementLLVMCompile(consequent, context, trueTempNamePointer);
-
-        trueTempNamePointer.type!=='void' && context.emit(
+        /**
+        * trueTempNamePointer type will be reassigned void if statement is a void call
+        */
+        trueTempNamePointer.type !== 'void' && context.emit(
             1,
             `store ${trueTempNamePointer.type} %${trueTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
         );
@@ -219,7 +221,7 @@ export class IfStatement extends Tree {
         if (alternate) {
             const elseTempNamePointer = context.env.scope.symbol();
             dispathStatementLLVMCompile(alternate, context, elseTempNamePointer);
-            elseTempNamePointer.type!=='void' && context.emit(
+            elseTempNamePointer.type !== 'void' && context.emit(
                 1,
                 `store ${elseTempNamePointer.type} %${elseTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
             );
@@ -318,14 +320,14 @@ export class FunctionDeclaration extends Tree {
 
     llvmCompile(context: LLVMContext, _: LLVMNamePointer) {
         let { body, id, params } = this.ast,
-        fn: LLVMNamePointer,
+            fn: LLVMNamePointer,
             lastStatement = body.body[body.body.length - 1],
             hasReturnStatement = lastStatement && body.body.length !== 0 && lastStatement.type === NodeTypes.ReturnStatement,
             shouldReturnVoid = body.body.length === 0 || !hasReturnStatement || hasReturnStatement && !(lastStatement as ESTree.ReturnStatement).argument;
         // Add this function to outer context.scope
         if (id) {
             fn = context.env.scope.register({
-                value:id.name,
+                value: id.name,
                 type: shouldReturnVoid ? 'void' : 'i64'
             });
         } else {
