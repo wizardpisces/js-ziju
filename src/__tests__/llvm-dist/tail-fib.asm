@@ -75,22 +75,17 @@ _print:                                 ## @print
 _tailFib:                               ## @tailFib
 	.cfi_startproc
 ## %bb.0:
-	push	rax
-	.cfi_def_cfa_offset 16
 	mov	rax, rdi
 	test	rdx, rdx
 	jne	LBB3_2
 ## %bb.1:                               ## %iftrue17
-	pop	rcx
 	ret
 LBB3_2:                                 ## %iffalse18
 	add	rax, rsi
 	dec	rdx
 	mov	rdi, rsi
 	mov	rsi, rax
-	call	_tailFib
-	pop	rcx
-	ret
+	jmp	_tailFib                        ## TAILCALL
 	.cfi_endproc
                                         ## -- End function
 	.globl	_fibHelper                      ## -- Begin function fibHelper

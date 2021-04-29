@@ -36,7 +36,7 @@ export class BlockStatement extends Tree {
     }
     llvmCompile(context: LLVMContext, namePointer: LLVMNamePointer) {
         return this.ast.body.every((statement: ESTree.Statement, i: number) => {
-            const isLast = this.ast.body.length - 1 === i;
+            // const isLast = this.ast.body.length - 1 === i;
 
             /**
              * Todos: determine whether it is function definition last sentence
@@ -44,9 +44,9 @@ export class BlockStatement extends Tree {
              */
             const contextClone = context.env.copy();
             contextClone.scope = context.env.scope;
-            if (!isLast || statement.type !== NodeTypes.ReturnStatement) {
-                contextClone.tailCallTree = [];
-            }
+            // if (!isLast || statement.type !== NodeTypes.ReturnStatement) {
+            //     contextClone.tailCallTree = [];
+            // }
             return dispathStatementLLVMCompile(statement, context, namePointer)
         })
     }
@@ -88,9 +88,7 @@ export class ReturnStatement extends Tree {
          */
 
         if (this.ast.argument) {
-            if (this.ast.argument.type !== NodeTypes.CallExpression) {
-                context.env.tailCallTree = []
-            } else {
+            if (this.ast.argument.type === NodeTypes.CallExpression) {
                 /**
                  * set tail_call_enabled = true
                  * only when encounter return CallExpression

@@ -62,7 +62,7 @@ ifend20:
   %sym27 = add i64 %n, 0
   %sym28 = add i64 1, 0
   %sym26 = sub i64 %sym27, %sym28
-  %sym9 = call i64 @tailFib(i64 %sym22, i64 %sym23, i64 %sym26)
+  %sym9 = tail call i64 @tailFib(i64 %sym22, i64 %sym23, i64 %sym26)
   ret i64 %sym9
 }
 

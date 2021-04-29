@@ -287,8 +287,31 @@ npm run jest
 
 Please result could reference test cases
 ## Refenrece
-
-* [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
-* [making-system-calls-from-assembly-in-mac-os-x](https://filippo.io/making-system-calls-from-assembly-in-mac-os-x/)
-* [compiler-basics-lisp-to-assembly](https://notes.eatonphil.com/compiler-basics-lisp-to-assembly.html)
-* [ir-is-better-than-assembly](https://idea.popcount.org/2013-07-24-ir-is-better-than-assembly/)
+### Project
+  * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
+### LLVM
+* Manual
+  * [LLVM](https://llvm.org/docs/LangRef.html)
+### NASM
+* Tutorial
+  * [NASM](https://cs.lmu.edu/~ray/notes/nasmtutorial/)
+### MASM X86 Assembly
+* Manual
+  * [X86-assembly-instructions](https://www.aldeid.com/wiki/X86-assembly/Instructions/mov)
+* Tutorial
+  * [NASM](https://cs.lmu.edu/~ray/notes/nasmtutorial/)
+* Article
+  * [introduction-to-x64-assembly](https://software.intel.com/content/www/us/en/develop/articles/introduction-to-x64-assembly.html)
+### Common
+* Project
+  * [Estree](https://github.com/estree/estree/blob/master/es2015.md)
+* Tools
+  * [online llvm compiler](http://ellcc.org/demo/index.cgi)
+  * [compiler explorer](https://godbolt.org/)
+  * [ast explorer](https://astexplorer.net/#/gist/244e2fb4da940df52bf0f4b94277db44/e79aff44611020b22cfd9708f3a99ce09b7d67a8)
+* Article
+  * [compiler-basics-lisp-to-assembly](https://notes.eatonphil.com/compiler-basics-lisp-to-assembly.html)
+  * [vm-arch](https://www.codeproject.com/Articles/461052/Stack-Based-vs-Register-Based-Virtual-Machine-Arch)
+  * [making-system-calls-from-assembly-in-mac-os-x](https://filippo.io/making-system-calls-from-assembly-in-mac-os-x/)
+  * [ir-is-better-than-assembly](https://idea.popcount.org/2013-07-24-ir-is-better-than-assembly/)
+  * [编程达到一个高的境界就是自制脚本语言](https://cloud.tencent.com/developer/news/305527)
