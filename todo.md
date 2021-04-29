@@ -1,23 +1,22 @@
 # Todos
 
-* compile to c++/v8
+1. compile to c++/v8
     * reference [jsc](https://github.com/eatonphil/jsc)
-* js emulator in js (go-amd64-emulator)[https://github.com/eatonphil/go-amd64-emulator/tree/944b590c4eee7ad726169096e2131a3f6e9808d9]
-* compile to LLVM IR
+2. js emulator in js (go-amd64-emulator)[https://github.com/eatonphil/go-amd64-emulator/tree/944b590c4eee7ad726169096e2131a3f6e9808d9]
+3. compile to LLVM IR
     * (Tail call optimization)[https://javascript.plainenglish.io/javascript-optimizations-tail-call-optimization-tco-471b4f8e4f37]
+    * solution for function return type determination
     * string?
     * Lists and dynamic memory?
     * class ?
     * Self-hosting?
     * Foreign function calls?
-* compile to NASM and implement vm(reference [a-virtual-machine](http://craftinginterpreters.com/a-virtual-machine.html)) to run NASM
-
-## Bugs
-
-* tests/asm/fib 函数里面包含多条 Statement 生成的 x86 asm会运行出问题
+4. compile to NASM and implement vm(reference [a-virtual-machine](http://craftinginterpreters.com/a-virtual-machine.html)) to run NASM
 
 ## Optimize
 
+* tests/asm/fib 函数里面包含多条 Statement 生成的 x86 asm会运行出问题
+* tests/llvm/fib if-else optimize
 * use traverse visitor mode (reference here)[https://raw.githubusercontent.com/wizardpisces/tiny-sass-compiler/master/src/genCodeVisitor.ts] to refactor compile to code , use estree-walker
 
 # 思考：

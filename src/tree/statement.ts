@@ -1,5 +1,6 @@
 import { Context, LLVMContext, X86Context } from '../environment/context'
 import ESTree from 'estree'
+import { walk } from 'estree-walker'
 import { NodeTypes } from './ast';
 import { BinaryExpression, dispatchExpressionCompile, dispatchExpressionEvaluation, dispatchExpressionLLVMCompile } from './expression';
 import { Tree } from './Tree'
@@ -190,9 +191,8 @@ export class IfStatement extends Tree {
         const { test, consequent, alternate } = this.ast
 
         const testVariable = context.env.scope.symbol();
-        const result = context.env.scope.symbol('ifresult');
+        const result = context.env.scope.symbol({ value: 'ifresult', type: 'i64*' });
         // Space for result
-        result.type = 'i64*';
         context.emit(1, `%${result.value} = alloca i64, align 4`);
         // Compile expression and branch
         dispatchExpressionLLVMCompile(test, context, testVariable);
@@ -218,22 +218,24 @@ export class IfStatement extends Tree {
         const endLabel = context.env.scope.symbol('ifend').value;
         context.emit(1, 'br label %' + endLabel);
         context.emit(0, falseLabel + ':');
+
+        let elseTempNamePointer = context.env.scope.symbol();
         if (alternate) {
-            const elseTempNamePointer = context.env.scope.symbol();
             dispathStatementLLVMCompile(alternate, context, elseTempNamePointer);
             elseTempNamePointer.type !== 'void' && context.emit(
                 1,
                 `store ${elseTempNamePointer.type} %${elseTempNamePointer.value}, ${result.type} %${result.value}, align 4`,
             );
         }
+
         context.emit(1, 'br label %' + endLabel);
 
         // Compile cleanup
         context.emit(0, endLabel + ':');
-        context.emit(
-            1,
-            `%${namePointer.value} = load ${namePointer.type}, ${result.type} %${result.value}, align 4`,
-        );
+        // context.emit(
+        //     1,
+        //     `%${namePointer.value} = load ${namePointer.type}, ${result.type} %${result.value}, align 4`,
+        // );
 
         return true;
     }
@@ -311,7 +313,7 @@ export class FunctionDeclaration extends Tree {
         new BlockStatement(body).compile(context, depth)
 
         // Save the return value
-        // context.emit(0, '');
+
         context.emit(depth, `POP RAX`);
         context.emit(depth, `POP RBP\n`);
 
@@ -319,16 +321,35 @@ export class FunctionDeclaration extends Tree {
     }
 
     llvmCompile(context: LLVMContext, _: LLVMNamePointer) {
+        function getRetInfo(ast: ESTree.FunctionDeclaration): { hasReturnStatement: boolean, voidTypeReturn: boolean } {
+            let hasReturnStatement = false,
+                voidTypeReturn = true;
+
+            walk(ast, {
+                enter(node) {
+                    if (node.type === NodeTypes.ReturnStatement) {
+                        hasReturnStatement = true;
+                        if ((node as ESTree.ReturnStatement).argument) {
+                            voidTypeReturn = false
+                        }
+                    }
+                }
+            })
+
+            return {
+                hasReturnStatement,
+                voidTypeReturn
+            }
+        }
+
         let { body, id, params } = this.ast,
             fn: LLVMNamePointer,
-            lastStatement = body.body[body.body.length - 1],
-            hasReturnStatement = lastStatement && body.body.length !== 0 && lastStatement.type === NodeTypes.ReturnStatement,
-            shouldReturnVoid = body.body.length === 0 || !hasReturnStatement || hasReturnStatement && !(lastStatement as ESTree.ReturnStatement).argument;
+            { hasReturnStatement, voidTypeReturn } = getRetInfo(this.ast);
         // Add this function to outer context.scope
         if (id) {
             fn = context.env.scope.register({
                 value: id.name,
-                type: shouldReturnVoid ? 'void' : 'i64'
+                type: voidTypeReturn ? 'void' : 'i64'
             });
         } else {
             throw Error('Do not support function name null yet!!')

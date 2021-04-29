@@ -10,7 +10,7 @@
     "jest": "jest"
   },
   "engines": {
-    "node": ">=10.x"
+    "node": ">=12.x"
   },
   "repository": {
     "type": "git",
@@ -45,6 +45,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "acorn": "^8.0.4"
+    "acorn": "^8.0.4",
+    "estree-walker": "^2.0.2"
   }
 }

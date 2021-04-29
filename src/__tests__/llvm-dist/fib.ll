@@ -41,9 +41,36 @@ define void @print(i64 %n) {
   ret void
 }
 
+define i64 @fib(i64 %n) {
+  %ifresult12 = alloca i64, align 4
+  %sym13 = add i64 %n, 0
+  %sym14 = add i64 2, 0
+  %sym11 = icmp slt i64 %sym13, %sym14
+  br i1 %sym11, label %iftrue15, label %iffalse16
+iftrue15:
+  %sym17 = add i64 %n, 0
+  ret i64 %sym17
+  store i64 %sym17, i64* %ifresult12, align 4
+  br label %ifend18
+iffalse16:
+  br label %ifend18
+ifend18:
+  %sym23 = add i64 %n, 0
+  %sym24 = add i64 1, 0
+  %sym22 = sub i64 %sym23, %sym24
+  %sym20 = call i64 @fib(i64 %sym22)
+  %sym26 = add i64 %n, 0
+  %sym27 = add i64 2, 0
+  %sym25 = sub i64 %sym26, %sym27
+  %sym21 = call i64 @fib(i64 %sym25)
+  %sym9 = add i64 %sym20, %sym21
+  ret i64 %sym9
+}
+
 define void @main() {
-  %sym10 = add i64 311, 0
-  call void @print(i64 %sym10)
+  %sym13 = add i64 5, 0
+  %sym12 = call i64 @fib(i64 %sym13)
+  call void @print(i64 %sym12)
   ret void
 }
 

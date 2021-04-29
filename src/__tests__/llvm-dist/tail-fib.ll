@@ -41,9 +41,43 @@ define void @print(i64 %n) {
   ret void
 }
 
+define i64 @tailFib(i64 %n1, i64 %n2, i64 %n) {
+  %ifresult14 = alloca i64, align 4
+  %sym15 = add i64 %n, 0
+  %sym16 = add i64 0, 0
+  %sym13 = icmp eq i64 %sym15, %sym16
+  br i1 %sym13, label %iftrue17, label %iffalse18
+iftrue17:
+  %sym19 = add i64 %n1, 0
+  ret i64 %sym19
+  store i64 %sym19, i64* %ifresult14, align 4
+  br label %ifend20
+iffalse18:
+  br label %ifend20
+ifend20:
+  %sym22 = add i64 %n2, 0
+  %sym24 = add i64 %n1, 0
+  %sym25 = add i64 %n2, 0
+  %sym23 = add i64 %sym24, %sym25
+  %sym27 = add i64 %n, 0
+  %sym28 = add i64 1, 0
+  %sym26 = sub i64 %sym27, %sym28
+  %sym9 = call i64 @tailFib(i64 %sym22, i64 %sym23, i64 %sym26)
+  ret i64 %sym9
+}
+
+define i64 @fibHelper(i64 %n) {
+  %sym13 = add i64 0, 0
+  %sym14 = add i64 1, 0
+  %sym15 = add i64 %n, 0
+  %sym11 = call i64 @tailFib(i64 %sym13, i64 %sym14, i64 %sym15)
+  ret i64 %sym11
+}
+
 define void @main() {
-  %sym10 = add i64 311, 0
-  call void @print(i64 %sym10)
+  %sym15 = add i64 10, 0
+  %sym14 = call i64 @fibHelper(i64 %sym15)
+  call void @print(i64 %sym14)
   ret void
 }
 

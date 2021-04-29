@@ -9,9 +9,9 @@ export * from '../environment/LLVM-Environment'
 export function llvmIdentifierCompile(ast: ESTree.Identifier, context: LLVMContext, useNamePointer: LLVMNamePointer) {
     const { name } = ast
     /**
-            * support kernel print starts with $$ is kernal call symbol
-            * Is a reference, add value pointer to result
-            */
+    * support kernel print starts with $$ is kernal call symbol
+    * Is a reference, add value pointer to result
+    */
     if ((name).startsWith('$$')) {
         const tmp = context.env.scope.symbol();
         const varNamePointer = context.env.scope.get(name);

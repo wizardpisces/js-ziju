@@ -24,13 +24,12 @@ iftrue11:
 iffalse12:
   br label %ifend17
 ifend17:
-  %sym5 = load i64, i64* %ifresult8, align 4
-  %sym19 = add i64 48, 0
-  %sym21 = add i64 %n, 0
-  %sym22 = add i64 10, 0
-  %sym20 = urem i64 %sym21, %sym22
-  %sym18 = add i64 %sym19, %sym20
-  call void @printChar(i64 %sym18)
+  %sym20 = add i64 48, 0
+  %sym22 = add i64 %n, 0
+  %sym23 = add i64 10, 0
+  %sym21 = urem i64 %sym22, %sym23
+  %sym19 = add i64 %sym20, %sym21
+  call void @printChar(i64 %sym19)
   ret void
 }
 

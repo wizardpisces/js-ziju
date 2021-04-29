@@ -1,7 +1,7 @@
 import {
     Assembler
 } from '../index'
-import { buildLLVM, readSourceWithKernal } from './utils'
+import { buildLLVM, readSourceWithKernal} from './utils'
 
 describe('compiler llvm', () => {
 
@@ -19,5 +19,21 @@ describe('compiler llvm', () => {
         expect(result.assembly).toMatchSnapshot()
 
         buildLLVM(result.assembly, 'functionCall')
+    });
+
+    it('fib', () => {
+        let result = new Assembler(readSourceWithKernal('tests/llvm/fib.js')).llvmCompile()
+
+        expect(result.assembly).toMatchSnapshot()
+
+        buildLLVM(result.assembly, 'fib')
+    });
+
+    it('tail-fib', () => {
+        let result = new Assembler(readSourceWithKernal('tests/llvm/tail-fib.js')).llvmCompile()
+
+        expect(result.assembly).toMatchSnapshot()
+
+        buildLLVM(result.assembly, 'tail-fib')
     });
 });

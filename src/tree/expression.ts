@@ -93,7 +93,8 @@ export class BinaryExpression extends Tree {
             '%': 'urem',
             '<': 'icmp slt',
             '>': 'icmp sgt',
-            '=': 'icmp eq',
+            '==': 'icmp eq',
+            '===': 'icmp eq',
         };
 
         const arg1 = context.env.scope.symbol();

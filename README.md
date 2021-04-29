@@ -1,9 +1,3 @@
-# 工程描述
-面向js语言的编译器，主要覆盖 LLVM IR ， X86汇编 ， 自我解释执行，以及更多。。。
-
-用工具可以制造工具，被制造出来的工具将来又可以制造新的工具。
-编译器可以编译出新的编译器。
-
 # Project Description
 A compiler for a javascript language targeting LLVM IR, x86 assembly , self interpreting and more to come...
 
