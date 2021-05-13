@@ -1,9 +1,6 @@
 # Project Description
 A compiler for a javascript language targeting LLVM IR, x86 assembly , self interpreting and more to come...
 
-Tools can be used to make tools, and the manufactured tools can be used to make new tools in the future.
-The compiler can compile a new compiler.
-
 ## Examples
 
 ### Interpret
