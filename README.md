@@ -289,7 +289,7 @@ npm run jest
 
 ## Detail
 
-Please result could reference test cases
+Further info could reference test cases
 ## Refenrece
 ### Project
   * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
