@@ -15,6 +15,7 @@
 
 ## Optimize
 
+* use go webassembly to speedup code generation
 * tests/asm/fib 函数里面包含多条 Statement 生成的 x86 asm会运行出问题
 * tests/llvm/fib if-else optimize
 * use traverse visitor mode (reference here)[https://raw.githubusercontent.com/wizardpisces/tiny-sass-compiler/master/src/genCodeVisitor.ts] to refactor compile to code , use estree-walker
