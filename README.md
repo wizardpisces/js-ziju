@@ -1,8 +1,12 @@
 # Project Description
 A compiler for a javascript language targeting LLVM IR, x86 assembly , self interpreting and more to come...
 
-Tools can be used to make tools, and the manufactured tools can be used to make new tools in the future.
-The compiler can compile a new compiler.
+**not for production**
+
+## A learning project for you to understand below list
+* how a compiler work and how to build one
+* how does code run from source
+* how to build code to Assembly or LLVM IR
 
 ## Examples
 
@@ -285,7 +289,7 @@ npm run jest
 
 ## Detail
 
-Please result could reference test cases
+Further info could reference test cases
 ## Refenrece
 ### Project
   * [build a sass compiler from scratch](https://github.com/wizardpisces/tiny-sass-compiler)
