@@ -282,9 +282,9 @@ define i64 @main() {
 ```
 npm install
 ```
-
+**Prepare "gcc" and "llc" enviroment or else only interpret.spec.ts could pass the test**
 ```
-npm run jest
+npm run test
 ```
 
 ## Detail
