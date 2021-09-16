@@ -1,5 +1,5 @@
 # Project Description
-A compiler for a javascript language targeting LLVM IR, x86 assembly , self interpreting etc...
+A compiler for javascript targeting LLVM IR, x86 assembly , self interpreting etc...
 
 ## A learning project for you to understand below list
 * How a compiler work and how to build one
